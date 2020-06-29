@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Spark入门(二)——Spark环境搭建与开发环境 | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+Standalone单节点模式
+Spark On Yarn
+Spark 开发环境构建
+
+SparkRDDWordCount(本地)
+集群(yarn)
+集群(standalone)
+
+
+
+
+
+(Spark Standalone与Spar..." />
+    <meta name="keywords" content="Spark,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Spark入门(二)——Spark环境搭建与开发环境</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#standalone%E5%8D%95%E8%8A%82%E7%82%B9%E6%A8%A1%E5%BC%8F">Standalone单节点模式</a></li>
+<li><a href="#spark-on-yarn">Spark On Yarn</a></li>
+<li><a href="#spark-%E5%BC%80%E5%8F%91%E7%8E%AF%E5%A2%83%E6%9E%84%E5%BB%BA">Spark 开发环境构建</a>
+<ul>
+<li><a href="#sparkrddwordcount%E6%9C%AC%E5%9C%B0">SparkRDDWordCount(本地)</a></li>
+<li><a href="#%E9%9B%86%E7%BE%A4yarn">集群(yarn)</a></li>
+<li><a href="#%E9%9B%86%E7%BE%A4standalone">集群(standalone)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+(Spark Standalone与Spark On Yarn环境搭建)</p>
+<h2 id="standalone单节点模式">Standalone单节点模式</h2>
+<ol>
+<li><strong>Hadoop环境(有Hadoop环境的可以直接进入下面Spark环境安装)</strong></li>
+</ol>
+<ul>
+<li>设置CentOS进程数和文件数(重启)</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# vi /etc/security/limits.conf
+* soft nofile 204800
+* hard nofile 204800
+* soft nproc 204800
+* hard nproc 204800
+[root@CentOS ~]# reboot
+</code></pre>
+<ul>
+<li>配置主机名(重启)</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# vi /etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=CentOS
+[root@CentOS ~]# reboot
+</code></pre>
+<ul>
+<li>设置IP映射</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# vi /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.111.132 CentOS
+</code></pre>
+<ul>
+<li>防火墙服务</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# service iptables stop
+iptables: Setting chains to policy ACCEPT: filter          [  OK  ]
+iptables: Flushing firewall rules:                         [  OK  ]
+iptables: Unloading modules:                               [  OK  ]
+[root@CentOS ~]# chkconfig iptables off
+</code></pre>
+<ul>
+<li>安装JDK1.8+</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# rpm -ivh jdk-8u191-linux-x64.rpm
+warning: jdk-8u191-linux-x64.rpm: Header V3 RSA/SHA256 Signature, key ID ec551f03: NOKEY
+Preparing...                ########################################### [100%]
+   1:jdk1.8                 ########################################### [100%]
+Unpacking JAR files...
+        tools.jar...
+        plugin.jar...
+        javaws.jar...
+        deploy.jar...
+        rt.jar...
+        jsse.jar...
+        charsets.jar...
+        localedata.jar...
+[root@CentOS ~]# vi .bashrc 
+JAVA_HOME=/usr/java/latest
+PATH=$PATH:$JAVA_HOME/bin
+CLASSPATH=.
+export JAVA_HOME
+export PATH
+export CLASSPATH
+[root@CentOS ~]# source ~/.bashrc
+</code></pre>
+<ul>
+<li>SSH配置免密</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# ssh-keygen -t rsa
+Generating public/private rsa key pair.
+Enter file in which to save the key (/root/.ssh/id_rsa):
+Created directory '/root/.ssh'.
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /root/.ssh/id_rsa.
+Your public key has been saved in /root/.ssh/id_rsa.pub.
+The key fingerprint is:
+a5:2d:f5:c3:22:83:cf:13:25:59:fb:c1:f4:63:06:d4 root@CentOS
+The key's randomart image is:
++--[ RSA 2048]----+
+|          ..+.   |
+|         o + oE  |
+|        o = o =  |
+|       . B + + . |
+|      . S o =    |
+|       o = . .   |
+|        +        |
+|         .       |
+|                 |
++-----------------+
+[root@CentOS ~]# ssh-copy-id CentOS
+The authenticity of host 'centos (192.168.111.132)' can't be established.
+RSA key fingerprint is fa:1b:c0:23:86:ff:08:5e:83:ba:65:4c:e6:f2:1f:3b.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'centos,192.168.111.132' (RSA) to the list of known hosts.
+root@centos's password:`需要输入密码`
+Now try logging into the machine, with &quot;ssh 'CentOS'&quot;, and check in:
+
+  .ssh/authorized_keys
+
+to make sure we haven't added extra keys that you weren't expecting.
+</code></pre>
+<ul>
+<li>配置HDFS</li>
+</ul>
+<p>将<code>hadoop-2.9.2.tar.gz</code>解压到系统的<code>/usr</code>目录下然后配置[core|hdfs]-site.xml配置文件。</p>
+<pre><code class="language-shell">[root@CentOS ~]# vi /usr/hadoop-2.9.2/etc/hadoop/core-site.xml
+</code></pre>
+<pre><code class="language-xml">&lt;!--nn访问入口--&gt;
+&lt;property&gt;
+    &lt;name&gt;fs.defaultFS&lt;/name&gt;
+    &lt;value&gt;hdfs://CentOS:9000&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--hdfs工作基础目录--&gt;
+&lt;property&gt;
+    &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;
+    &lt;value&gt;/usr/hadoop-2.9.2/hadoop-${user.name}&lt;/value&gt;
+&lt;/property&gt;
+</code></pre>
+<pre><code class="language-shell">[root@CentOS ~]# vi /usr/hadoop-2.9.2/etc/hadoop/hdfs-site.xml
+</code></pre>
+<pre><code class="language-xml">&lt;!--block副本因子--&gt;
+&lt;property&gt;
+    &lt;name&gt;dfs.replication&lt;/name&gt;
+    &lt;value&gt;1&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--配置Sencondary namenode所在物理主机--&gt;
+&lt;property&gt;
+    &lt;name&gt;dfs.namenode.secondary.http-address&lt;/name&gt;
+    &lt;value&gt;CentOS:50090&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--设置datanode最大文件操作数--&gt;
+&lt;property&gt;
+        &lt;name&gt;dfs.datanode.max.xcievers&lt;/name&gt;
+        &lt;value&gt;4096&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--设置datanode并行处理能力--&gt;
+&lt;property&gt;
+        &lt;name&gt;dfs.datanode.handler.count&lt;/name&gt;
+        &lt;value&gt;6&lt;/value&gt;
+&lt;/property&gt;
+</code></pre>
+<pre><code class="language-shell">[root@CentOS ~]# vi /usr/hadoop-2.9.2/etc/hadoop/slaves
+</code></pre>
+<pre><code class="language-tex">CentOS
+</code></pre>
+<ul>
+<li>配置hadoop环境变量</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# vi .bashrc
+HADOOP_HOME=/usr/hadoop-2.9.2
+JAVA_HOME=/usr/java/latest
+PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+CLASSPATH=.
+export JAVA_HOME
+export PATH
+export CLASSPATH
+export HADOOP_HOME
+[root@CentOS ~]# source .bashrc
+
+</code></pre>
+<ul>
+<li>启动Hadoop服务</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# hdfs namenode -format # 创建初始化所需的fsimage文件
+[root@CentOS ~]# start-dfs.sh
+</code></pre>
+<ol start="2">
+<li><strong>Spark环境</strong></li>
+</ol>
+<p>下载<code>spark-2.4.3-bin-without-hadoop.tgz</code>解压到<code>/usr</code>目录,并且将Spark目录修改名字为<code>spark-2.4.3</code>然后修改<code>spark-env.sh</code>和<code>spark-default.conf</code>文件.</p>
+<p>下载地址：http://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.4.3/spark-2.4.3-bin-without-hadoop.tgz</p>
+<ul>
+<li>解压Spark安装包，并且修改解压文件名</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# tar -zxf spark-2.4.3-bin-without-hadoop.tgz -C /usr/
+[root@CentOS ~]# mv /usr/spark-2.4.3-bin-without-hadoop/ /usr/spark-2.4.3
+[root@CentOS ~]# vi .bashrc
+SPARK_HOME=/usr/spark-2.4.3
+HADOOP_HOME=/usr/hadoop-2.9.2
+JAVA_HOME=/usr/java/latest
+PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$SPARK_HOME/sbin
+CLASSPATH=.
+export JAVA_HOME
+export PATH
+export CLASSPATH
+export HADOOP_HOME
+export SPARK_HOME
+[root@CentOS ~]# source .bashrc
+</code></pre>
+<ul>
+<li>配置Spark服务</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS spark-2.4.3]# cd /usr/spark-2.4.3/conf/
+[root@CentOS conf]# mv spark-env.sh.template spark-env.sh
+[root@CentOS conf]# mv slaves.template slaves
+[root@CentOS conf]# vi slaves
+CentOS
+[root@CentOS conf]# vi spark-env.sh
+SPARK_MASTER_HOST=CentOS
+SPARK_MASTER_PORT=7077
+SPARK_WORKER_CORES=4
+SPARK_WORKER_MEMORY=2g
+LD_LIBRARY_PATH=/usr/hadoop-2.9.2/lib/native
+SPARK_DIST_CLASSPATH=$(hadoop classpath)
+
+export SPARK_MASTER_HOST
+export SPARK_MASTER_PORT
+export SPARK_WORKER_CORES
+export SPARK_WORKER_MEMORY
+export LD_LIBRARY_PATH
+export SPARK_DIST_CLASSPATH
+</code></pre>
+<ul>
+<li>启动Spark进程</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# cd /usr/spark-2.4.3/
+[root@CentOS spark-2.4.3]# ./sbin/start-all.sh
+starting org.apache.spark.deploy.master.Master, logging to /usr/spark-2.4.3/logs/spark-root-org.apache.spark.deploy.master.Master-1-CentOS.out
+CentOS: starting org.apache.spark.deploy.worker.Worker, logging to /usr/spark-2.4.3/logs/spark-root-org.apache.spark.deploy.worker.Worker-1-CentOS.out
+</code></pre>
+<ul>
+<li>测试Spark</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS spark-2.4.3]# ./bin/spark-shell 
+					--master spark://CentOS:7077 
+					--deploy-mode client 
+					--executor-cores 2
+
+</code></pre>
+<blockquote>
+<p><code>executor-cores</code>：在standalone模式表示程序每个Worker节点分配资源数。不能超过单台自大core个数，如果不清每台能够分配的最大core的个数，可以使用<code>--total-executor-cores</code>,该种分配会尽最大可能分配。</p>
+</blockquote>
+<pre><code class="language-java">scala&gt; sc.textFile(&quot;hdfs:///words/t_words&quot;,5)
+    .flatMap(_.split(&quot; &quot;))
+    .map((_,1))
+    .reduceByKey(_+_)
+    .sortBy(_._1,true,3)
+    .saveAsTextFile(&quot;hdfs:///results&quot;)
+
+</code></pre>
+<ul>
+<li>上述任务的任务拆分图：<br>
+<img src="https://img-blog.csdnimg.cn/20200521090311893.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></li>
+</ul>
+<h2 id="spark-on-yarn">Spark On Yarn</h2>
+<ol>
+<li><strong>Hadoop环境(配置过Yarn的可以直接跳过Hadoop安装)</strong></li>
+</ol>
+<ul>
+<li>设置CentOS进程数和文件数(重启)</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# vi /etc/security/limits.conf
+* soft nofile 204800
+* hard nofile 204800
+* soft nproc 204800
+* hard nproc 204800
+[root@CentOS ~]# reboot
+</code></pre>
+<ul>
+<li>配置主机名(重启)</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# vi /etc/sysconfig/network
+NETWORKING=yes
+HOSTNAME=CentOS
+[root@CentOS ~]# reboot
+</code></pre>
+<ul>
+<li>设置IP映射</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# vi /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+192.168.111.132 CentOS
+</code></pre>
+<ul>
+<li>防火墙服务</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# service iptables stop
+iptables: Setting chains to policy ACCEPT: filter          [  OK  ]
+iptables: Flushing firewall rules:                         [  OK  ]
+iptables: Unloading modules:                               [  OK  ]
+[root@CentOS ~]# chkconfig iptables off
+</code></pre>
+<ul>
+<li>安装JDK1.8+</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# rpm -ivh jdk-8u191-linux-x64.rpm
+warning: jdk-8u191-linux-x64.rpm: Header V3 RSA/SHA256 Signature, key ID ec551f03: NOKEY
+Preparing...                ########################################### [100%]
+   1:jdk1.8                 ########################################### [100%]
+Unpacking JAR files...
+        tools.jar...
+        plugin.jar...
+        javaws.jar...
+        deploy.jar...
+        rt.jar...
+        jsse.jar...
+        charsets.jar...
+        localedata.jar...
+[root@CentOS ~]# vi .bashrc 
+JAVA_HOME=/usr/java/latest
+PATH=$PATH:$JAVA_HOME/bin
+CLASSPATH=.
+export JAVA_HOME
+export PATH
+export CLASSPATH
+[root@CentOS ~]# source ~/.bashrc
+</code></pre>
+<ul>
+<li>SSH配置免密</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# ssh-keygen -t rsa
+Generating public/private rsa key pair.
+Enter file in which to save the key (/root/.ssh/id_rsa):
+Created directory '/root/.ssh'.
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /root/.ssh/id_rsa.
+Your public key has been saved in /root/.ssh/id_rsa.pub.
+The key fingerprint is:
+a5:2d:f5:c3:22:83:cf:13:25:59:fb:c1:f4:63:06:d4 root@CentOS
+The key's randomart image is:
++--[ RSA 2048]----+
+|          ..+.   |
+|         o + oE  |
+|        o = o =  |
+|       . B + + . |
+|      . S o =    |
+|       o = . .   |
+|        +        |
+|         .       |
+|                 |
++-----------------+
+[root@CentOS ~]# ssh-copy-id CentOS
+The authenticity of host 'centos (192.168.111.132)' can't be established.
+RSA key fingerprint is fa:1b:c0:23:86:ff:08:5e:83:ba:65:4c:e6:f2:1f:3b.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'centos,192.168.111.132' (RSA) to the list of known hosts.
+root@centos's password:`需要输入密码`
+Now try logging into the machine, with &quot;ssh 'CentOS'&quot;, and check in:
+
+  .ssh/authorized_keys
+
+to make sure we haven't added extra keys that you weren't expecting.
+</code></pre>
+<ul>
+<li>配置HDFS</li>
+</ul>
+<p>将<code>hadoop-2.9.2.tar.gz</code>解压到系统的<code>/usr</code>目录下然后配置[core|hdfs]-site.xml配置文件。</p>
+<pre><code class="language-shell">[root@CentOS ~]# vi /usr/hadoop-2.9.2/etc/hadoop/core-site.xml
+</code></pre>
+<pre><code class="language-xml">&lt;!--nn访问入口--&gt;
+&lt;property&gt;
+    &lt;name&gt;fs.defaultFS&lt;/name&gt;
+    &lt;value&gt;hdfs://CentOS:9000&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--hdfs工作基础目录--&gt;
+&lt;property&gt;
+    &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;
+    &lt;value&gt;/usr/hadoop-2.9.2/hadoop-${user.name}&lt;/value&gt;
+&lt;/property&gt;
+</code></pre>
+<pre><code class="language-shell">[root@CentOS ~]# vi /usr/hadoop-2.9.2/etc/hadoop/hdfs-site.xml
+</code></pre>
+<pre><code class="language-xml">&lt;!--block副本因子--&gt;
+&lt;property&gt;
+    &lt;name&gt;dfs.replication&lt;/name&gt;
+    &lt;value&gt;1&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--配置Sencondary namenode所在物理主机--&gt;
+&lt;property&gt;
+    &lt;name&gt;dfs.namenode.secondary.http-address&lt;/name&gt;
+    &lt;value&gt;CentOS:50090&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--设置datanode最大文件操作数--&gt;
+&lt;property&gt;
+        &lt;name&gt;dfs.datanode.max.xcievers&lt;/name&gt;
+        &lt;value&gt;4096&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--设置datanode并行处理能力--&gt;
+&lt;property&gt;
+        &lt;name&gt;dfs.datanode.handler.count&lt;/name&gt;
+        &lt;value&gt;6&lt;/value&gt;
+&lt;/property&gt;
+</code></pre>
+<pre><code class="language-shell">[root@CentOS ~]# vi /usr/hadoop-2.9.2/etc/hadoop/slaves
+</code></pre>
+<pre><code class="language-tex">CentOS
+</code></pre>
+<pre><code class="language-shell">[root@CentOS ~]# vi /usr/hadoop-2.9.2/etc/hadoop/yarn-site.xml
+</code></pre>
+<pre><code class="language-xml">&lt;!--配置MapReduce计算框架的核心实现Shuffle-洗牌--&gt;
+&lt;property&gt;
+    &lt;name&gt;yarn.nodemanager.aux-services&lt;/name&gt;
+    &lt;value&gt;mapreduce_shuffle&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--配置资源管理器所在的目标主机--&gt;
+&lt;property&gt;
+    &lt;name&gt;yarn.resourcemanager.hostname&lt;/name&gt;
+    &lt;value&gt;CentOS&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--关闭物理内存检查--&gt;
+&lt;property&gt;
+        &lt;name&gt;yarn.nodemanager.pmem-check-enabled&lt;/name&gt;
+        &lt;value&gt;false&lt;/value&gt;
+&lt;/property&gt;
+&lt;!--关闭虚拟内存检查--&gt;
+&lt;property&gt;
+        &lt;name&gt;yarn.nodemanager.vmem-check-enabled&lt;/name&gt;
+        &lt;value&gt;false&lt;/value&gt;
+&lt;/property&gt;
+</code></pre>
+<pre><code class="language-shell">[root@CentOS ~]# vi /usr/hadoop-2.9.2/etc/hadoop/mapred-site.xml
+</code></pre>
+<pre><code class="language-xml">&lt;!--MapRedcue框架资源管理器的实现--&gt;
+&lt;property&gt;
+    &lt;name&gt;mapreduce.framework.name&lt;/name&gt;
+    &lt;value&gt;yarn&lt;/value&gt;
+&lt;/property&gt;
+</code></pre>
+<ul>
+<li>配置hadoop环境变量</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# vi .bashrc
+HADOOP_HOME=/usr/hadoop-2.9.2
+JAVA_HOME=/usr/java/latest
+PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+CLASSPATH=.
+export JAVA_HOME
+export PATH
+export CLASSPATH
+export HADOOP_HOME
+[root@CentOS ~]# source .bashrc
+
+</code></pre>
+<ul>
+<li>启动Hadoop服务</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# hdfs namenode -format # 创建初始化所需的fsimage文件
+[root@CentOS ~]# start-all.sh
+</code></pre>
+<ol start="2">
+<li><strong>Spark环境</strong></li>
+</ol>
+<p>下载<code>spark-2.4.3-bin-without-hadoop.tgz</code>解压到<code>/usr</code>目录,并且将Spark目录修改名字为<code>spark-2.4.3</code>然后修改<code>spark-env.sh</code>和<code>spark-default.conf</code>文件.</p>
+<p>下载地址：http://mirrors.tuna.tsinghua.edu.cn/apache/spark/spark-2.4.3/spark-2.4.3-bin-without-hadoop.tgz</p>
+<ul>
+<li>解压Spark安装包，并且修改解压文件名</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS ~]# tar -zxf spark-2.4.3-bin-without-hadoop.tgz -C /usr/
+[root@CentOS ~]# mv /usr/spark-2.4.3-bin-without-hadoop/ /usr/spark-2.4.3
+[root@CentOS ~]# vi .bashrc
+SPARK_HOME=/usr/spark-2.4.3
+HADOOP_HOME=/usr/hadoop-2.9.2
+JAVA_HOME=/usr/java/latest
+PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$SPARK_HOME/sbin
+CLASSPATH=.
+export JAVA_HOME
+export PATH
+export CLASSPATH
+export HADOOP_HOME
+export SPARK_HOME
+[root@CentOS ~]# source .bashrc
+</code></pre>
+<ul>
+<li>配置Spark服务</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS spark-2.4.3]# cd /usr/spark-2.4.3/conf/
+[root@CentOS conf]# mv spark-env.sh.template spark-env.sh
+[root@CentOS conf]# vi spark-env.sh
+HADOOP_CONF_DIR=/usr/hadoop-2.9.2/etc/hadoop
+YARN_CONF_DIR=/usr/hadoop-2.9.2/etc/hadoop
+SPARK_EXECUTOR_CORES=4
+SPARK_EXECUTOR_MEMORY=2G
+SPARK_DRIVER_MEMORY=1G
+LD_LIBRARY_PATH=/usr/hadoop-2.9.2/lib/native
+SPARK_DIST_CLASSPATH=$(hadoop classpath):$SPARK_DIST_CLASSPATH
+SPARK_HISTORY_OPTS=&quot;-Dspark.history.fs.logDirectory=hdfs:///spark-logs&quot;
+
+export HADOOP_CONF_DIR
+export YARN_CONF_DIR
+export SPARK_EXECUTOR_CORES
+export SPARK_DRIVER_MEMORY
+export SPARK_EXECUTOR_MEMORY
+export LD_LIBRARY_PATH
+export SPARK_DIST_CLASSPATH
+export SPARK_HISTORY_OPTS
+
+[root@CentOS conf]# mv spark-defaults.conf.template spark-defaults.conf
+[root@CentOS conf]# vi spark-defaults.conf
+spark.eventLog.enabled=true
+spark.eventLog.dir=hdfs:///spark-logs
+</code></pre>
+<p>在HDFS上创建<code>spark-logs</code>目录，用于作为Sparkhistory服务器存储数据的地方。</p>
+<pre><code class="language-shell">[root@CentOS ~]# hdfs dfs -mkdir /spark-logs
+</code></pre>
+<ul>
+<li>启动Spark历史服务器(可选)</li>
+</ul>
+<pre><code class="language-shell">[root@CentOS spark-2.4.3]# ./sbin/start-history-server.sh
+starting org.apache.spark.deploy.history.HistoryServer, logging to /usr/spark-2.4.3/logs/spark-root-org.apache.spark.deploy.history.HistoryServer-1-CentOS.out
+[root@CentOS spark-2.4.3]# jps
+5728 NodeManager
+5090 NameNode
+5235 DataNode
+10531 Jps
+5623 ResourceManager
+5416 SecondaryNameNode
+10459 HistoryServer
+
+</code></pre>
+<blockquote>
+<p>该进程启动一个内嵌的web ui端口是18080，用户可以访问改页面查看任务执行计划、历史。</p>
+</blockquote>
+<ul>
+<li>测试Spark</li>
+</ul>
+<pre><code class="language-shell">./bin/spark-shell 
+	--master yarn 
+	--deploy-mode client 
+	--num-executors 2 
+	--executor-cores 3
+</code></pre>
+<blockquote>
+<p><code>--num-executors</code>：在Yarn模式下，表示向NodeManager申请的资源数进程，<br>
+<code>--executor-cores</code>表示每个进程所能运行线程数。<br>
+真个任务计算资源= <code>num-executors * executor-core</code></p>
+</blockquote>
+<pre><code class="language-java">scala&gt; sc.textFile(&quot;hdfs:///words/t_words&quot;,5)
+    .flatMap(_.split(&quot; &quot;))
+    .map((_,1))
+    .reduceByKey(_+_)
+    .sortBy(_._1,true,3)
+    .saveAsTextFile(&quot;hdfs:///results&quot;)
+
+</code></pre>
+<ul>
+<li>上述任务的任务划分图<img src="https://img-blog.csdnimg.cn/20200521091516540.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></li>
+<li>本地仿真</li>
+</ul>
+<p>在该种模式下，无需安装yarn、无需启动Stanalone，一切都是模拟。</p>
+<pre><code class="language-shell">[root@CentOS spark-2.4.3]# ./bin/spark-shell --master local[5]
+Setting default log level to &quot;WARN&quot;.
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+Spark context Web UI available at http://CentOS:4040
+Spark context available as 'sc' (master = local[5], app id = local-1561742649329).
+Spark session available as 'spark'.
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 2.4.3
+      /_/
+
+Using Scala version 2.11.12 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0_191)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala&gt; sc.textFile(&quot;hdfs:///words/t_words&quot;).flatMap(_.split(&quot; &quot;)).map((_,1)).reduceByKey(_+_).sortBy(_._1,false,3).saveAsTextFile(&quot;hdfs:///results1/&quot;)
+
+scala&gt;
+
+</code></pre>
+<h2 id="spark-开发环境构建">Spark 开发环境构建</h2>
+<ul>
+<li>引入开发所需依赖</li>
+</ul>
+<pre><code class="language-xml">&lt;dependencies&gt;
+    &lt;!-- https://mvnrepository.com/artifact/org.apache.spark/spark-core --&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+        &lt;artifactId&gt;spark-core_2.11&lt;/artifactId&gt;
+        &lt;version&gt;2.4.3&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependencies&gt;
+&lt;build&gt;
+    &lt;plugins&gt;
+        &lt;!--scala编译插件--&gt;
+        &lt;plugin&gt;
+            &lt;groupId&gt;net.alchim31.maven&lt;/groupId&gt;
+            &lt;artifactId&gt;scala-maven-plugin&lt;/artifactId&gt;
+            &lt;version&gt;4.0.1&lt;/version&gt;
+            &lt;executions&gt;
+                &lt;execution&gt;
+                    &lt;id&gt;scala-compile-first&lt;/id&gt;
+                    &lt;phase&gt;process-resources&lt;/phase&gt;
+                    &lt;goals&gt;
+                        &lt;goal&gt;add-source&lt;/goal&gt;
+                        &lt;goal&gt;compile&lt;/goal&gt;
+                    &lt;/goals&gt;
+                &lt;/execution&gt;
+            &lt;/executions&gt;
+        &lt;/plugin&gt;
+    &lt;/plugins&gt;
+&lt;/build&gt;
+</code></pre>
+<h3 id="sparkrddwordcount本地">SparkRDDWordCount(本地)</h3>
+<pre><code class="language-java">   //1.创建SparkContext
+    val conf = new SparkConf().setMaster(&quot;local[10]&quot;).setAppName(&quot;wordcount&quot;)
+    val sc = new SparkContext(conf)
+
+    val lineRDD: RDD[String] = sc.textFile(&quot;file:///Users/mashikang/demo/words/t_word.txt&quot;)
+    lineRDD.flatMap(line=&gt;line.split(&quot; &quot;))
+        .map(word=&gt;(word,1))
+        .groupByKey()
+        .map(tuple=&gt;(tuple._1,tuple._2.sum))
+        .sortBy(tuple=&gt;tuple._2,false,1)
+        .collect()
+        .foreach(tuple=&gt;println(tuple._1+&quot;-&gt;&quot;+tuple._2))
+
+    //3.关闭sc
+    sc.stop()
+</code></pre>
+<h3 id="集群yarn">集群(yarn)</h3>
+<pre><code class="language-java">//1.创建SparkContext
+val conf = new SparkConf().setMaster(&quot;yarn&quot;).setAppName(&quot;wordcount&quot;)
+val sc = new SparkContext(conf)
+
+val lineRDD: RDD[String] = sc.textFile(&quot;hdfs:///words/t_words&quot;)
+lineRDD.flatMap(line=&gt;line.split(&quot; &quot;))
+.map(word=&gt;(word,1))
+.groupByKey()
+.map(tuple=&gt;(tuple._1,tuple._2.sum))
+.sortBy(tuple=&gt;tuple._2,false,1)
+.collect()
+.foreach(tuple=&gt;println(tuple._1+&quot;-&gt;&quot;+tuple._2))
+
+//3.关闭sc
+sc.stop()
+</code></pre>
+<p>发布：</p>
+<pre><code class="language-shell">[root@CentOS spark-2.4.3]# ./bin/spark-submit --master yarn --deploy-mode client --class com.mask.demo02.SparkRDDWordCount --num-executors 3 --executor-cores 4 /root/sparkrdd-1.0-SNAPSHOT.jar
+</code></pre>
+<h3 id="集群standalone">集群(standalone)</h3>
+<pre><code class="language-java">//1.创建SparkContext
+val conf = new SparkConf().setMaster(&quot;spark://CentOS:7077&quot;).setAppName(&quot;wordcount&quot;)
+val sc = new SparkContext(conf)
+
+val lineRDD: RDD[String] = sc.textFile(&quot;hdfs:///words/t_words&quot;)
+lineRDD.flatMap(line=&gt;line.split(&quot; &quot;))
+.map(word=&gt;(word,1))
+.groupByKey()
+.map(tuple=&gt;(tuple._1,tuple._2.sum))
+.sortBy(tuple=&gt;tuple._2,false,1)
+.collect()
+.foreach(tuple=&gt;println(tuple._1+&quot;-&gt;&quot;+tuple._2))
+
+//3.关闭sc
+sc.stop()
+</code></pre>
+<p>发布：</p>
+<pre><code class="language-shell">[root@CentOS spark-2.4.3]# ./bin/spark-submit --master spark://CentOS:7077 --deploy-mode client --class com.mask.demo02.SparkRDDWordCount --num-executors 3 --total-executor-cores 4 /root/sparkrdd-1.0-SNAPSHOT.jar
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/aAuqPKSPG/" class="tag">
+                    Spark
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/spark00/">
+                  <h3 class="post-title">
+                    Spark入门(一)——Spark的“前世今生”
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

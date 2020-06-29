@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Spark入门(三)——SparkRDD剖析(面试点) | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+RDD简介
+
+如下案例：
+
+
+RDD容错
+RDD 宽窄依赖
+Sage划分(重点)
+小结
+RDD缓存机制
+Check Point 机制
+
+
+
+(Spark RDD剖析)
+RDD简介
+Spark计算中一个重要的概念就是可以跨越多个节点的可..." />
+    <meta name="keywords" content="Spark,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Spark入门(三)——SparkRDD剖析(面试点)</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#rdd%E7%AE%80%E4%BB%8B">RDD简介</a>
+<ul>
+<li><a href="#%E5%A6%82%E4%B8%8B%E6%A1%88%E4%BE%8B">如下案例：</a></li>
+</ul>
+</li>
+<li><a href="#rdd%E5%AE%B9%E9%94%99">RDD容错</a></li>
+<li><a href="#rdd-%E5%AE%BD%E7%AA%84%E4%BE%9D%E8%B5%96">RDD 宽窄依赖</a></li>
+<li><a href="#sage%E5%88%92%E5%88%86%E9%87%8D%E7%82%B9">Sage划分(重点)</a></li>
+<li><a href="#%E5%B0%8F%E7%BB%93">小结</a></li>
+<li><a href="#rdd%E7%BC%93%E5%AD%98%E6%9C%BA%E5%88%B6">RDD缓存机制</a></li>
+<li><a href="#check-point-%E6%9C%BA%E5%88%B6">Check Point 机制</a></li>
+</ul>
+</li>
+</ul>
+(Spark RDD剖析)</p>
+<h2 id="rdd简介">RDD简介</h2>
+<p>Spark计算中一个重要的概念就是可以跨越多个节点的可伸缩分布式数据集 RDD（resilient distributed<br>
+dataset） Spark的内存计算的核心就是RDD的并行计算。RDD可以理解是一个弹性的，分布式、不可变的、带有分区的数据集合，所谓的Spark的批处理，实际上就是正对RDD的集合操作，RDD有以下特点：</p>
+<blockquote>
+<ul>
+<li>任意一个RDD都包含分区数（决定程序某个阶段计算并行度）</li>
+<li>RDD所谓的分布式计算是在分区内部计算的</li>
+<li>因为RDD是只读的，RDD之间的变换存着依赖关系（宽依赖、窄依赖）</li>
+<li>针对于k-v类型的RDD，一般可以指定分区策略（一般系统提供）</li>
+<li>针对于存储在HDFS上的文件，系统可以计算最优位置，计算每个切片。（了解）</li>
+</ul>
+</blockquote>
+<h3 id="如下案例">如下案例：</h3>
+<p><img src="https://img-blog.csdnimg.cn/20200522171658139.jpg?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+通过上述的代码中不难发现，Spark的整个任务的计算无外乎围绕RDD的三种类型操作RDD创建、RDD转换、RDD Action.通常习惯性的将flatMap/map/reduceByKey称为RDD的转换算子，collect触发任务执行，因此被人们称为动作算子。在Spark中所有的Transform算子都是lazy执行的，只有在Action算子的时候，Spark才会真正的运行任务，也就是说只有遇到Action算子的时候，SparkContext才会对任务做DAG状态拆分，系统才会计算每个状态下任务的TaskSet，继而TaskSchedule才会将任务提交给Executors执行。现将以上字符统计计算流程描述如下：</p>
+<figure data-type="image" tabindex="1"><img src="https://img-blog.csdnimg.cn/20200522171841951.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="DAG划分" loading="lazy"></figure>
+<p><code>textFile(&quot;路径&quot;，分区数)</code>-&gt; <code>flatMap</code> -&gt; <code>map</code> -&gt; <code>reduceByKey</code> -&gt; <code>sortBy</code>在这些转换中其中<code>flatMap/map</code>、<code>reduceByKey</code>、<code>sotBy</code>都是转换算子，所有的转换算子都是<code>Lazy</code>执行的。程序在遇到<code>collect（Action 算子）</code>系统会触发job执行。Spark底层会按照RDD的依赖关系将整个计算拆分成若干个阶段，我们通常将RDD的依赖关系称为<code>RDD的血统-lineage</code>。血统的依赖通常包含：<code>宽依赖</code>、<code>窄依赖</code>。</p>
+<h2 id="rdd容错">RDD容错</h2>
+<p>在理解DAGSchedule如何做状态划分的前提是需要大家了解一个专业术语lineage通常被人们称为RDD的血统。在了解什么是RDD的血统之前，先来看看程序猿进化过程。<br>
+<img src="https://img-blog.csdnimg.cn/20200522172008430.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+上图中描述了一个程序猿起源变化的过程，我们可以近似的理解类似于RDD的转换也是一样的，Spark的计算本质就是对RDD做各种转换，因为RDD是一个不可变只读的集合，因此每次的转换都需要上一次的RDD作为本次转换的输入，因此RDD的lineage描述的是RDD间的相互依赖关系。为了保证RDD中数据的健壮性，RDD数据集通过所谓的血统关系(Lineage)记住了它是如何从其它RDD中演变过来的。Spark将RDD之间的关系归类为宽依赖和窄依赖。Spark会根据Lineage存储的RDD的依赖关系对RDD计算做故障容错，目前Saprk的容错策略更具RDD依赖关系重新计算、对RDD做Cache、对RDD做Checkpoint手段完成RDD计算的故障容错。</p>
+<h2 id="rdd-宽窄依赖">RDD 宽窄依赖</h2>
+<p>RDD在Lineage依赖方面分为两种<code>Narrow Dependencies</code>与<code>Wide Dependencies</code>用来解决数据容错的高效性。<code>Narrow Dependencies</code>是指父RDD的每一个分区最多被一个子RDD的分区所用，表现为一个父RDD的分区对应于一个子RDD的分区或多个父RDD的分区对应于子RDD的一个分区，也就是说一个父RDD的一个分区不可能对应一个子RDD的多个分区。<code>Wide Dependencies</code>父RDD的一个分区对应一个子RDD的多个分区。</p>
+<p><img src="https://img-blog.csdnimg.cn/20200522172404876.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+对于Wide Dependencies这种计算的输入和输出在不同的节点上，一般需要夸节点做Shuffle，因此如果是RDD在做宽依赖恢复的时候需要多个节点重新计算成本较高。相对于Narrow Dependencies RDD间的计算是在同一个Task当中实现的是线程内部的的计算，因此在RDD分区数据丢失的的时候，也非常容易恢复。</p>
+<h2 id="sage划分重点">Sage划分(重点)</h2>
+<p>Spark任务阶段的划分是按照RDD的lineage关系逆向生成的这么一个过程，Spark任务提交的流程大致如下图所示：<br>
+<img src="https://img-blog.csdnimg.cn/20200522172500694.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+这里可以分析一下DAGScheduel中对State拆分的逻辑代码片段如下所示：</p>
+<ul>
+<li><code>DAGScheduler.scala</code> 第<code>719</code>行</li>
+</ul>
+<pre><code class="language-java">def runJob[T, U](
+      rdd: RDD[T],
+      func: (TaskContext, Iterator[T]) =&gt; U,
+      partitions: Seq[Int],
+      callSite: CallSite,
+      resultHandler: (Int, U) =&gt; Unit,
+      properties: Properties): Unit = {
+    val start = System.nanoTime
+    val waiter = submitJob(rdd, func, partitions, callSite, resultHandler, properties)
+    //...
+  }
+</code></pre>
+<ul>
+<li><code>DAGScheduler</code> - <code>675</code>行</li>
+</ul>
+<pre><code class="language-java">  def submitJob[T, U](
+      rdd: RDD[T],
+      func: (TaskContext, Iterator[T]) =&gt; U,
+      partitions: Seq[Int],
+      callSite: CallSite,
+      resultHandler: (Int, U) =&gt; Unit,
+      properties: Properties): JobWaiter[U] = {
+      //eventProcessLoop 实现的是一个队列，系统底层会调用 doOnReceive -&gt; case JobSubmitted -&gt; dagScheduler.handleJobSubmitted(951行)
+      eventProcessLoop.post(JobSubmitted(
+      jobId, rdd, func2, partitions.toArray, callSite, waiter,
+      SerializationUtils.clone(properties)))
+    waiter
+  }
+</code></pre>
+<ul>
+<li><code>DAGScheduler</code> - <code>951</code>行</li>
+</ul>
+<pre><code class="language-java"> private[scheduler] def handleJobSubmitted(jobId: Int,
+      finalRDD: RDD[_],
+      func: (TaskContext, Iterator[_]) =&gt; _,
+      partitions: Array[Int],
+      callSite: CallSite,
+      listener: JobListener,
+      properties: Properties) {
+    var finalStage: ResultStage = null
+    try {
+      //...
+      finalStage = createResultStage(finalRDD, func, partitions, jobId, callSite)
+    } catch {
+      //...
+    }
+    submitStage(finalStage)
+ }
+
+</code></pre>
+<ul>
+<li><code>DAGScheduler</code> - <code>1060</code>行</li>
+</ul>
+<pre><code class="language-java">  private def submitStage(stage: Stage) {
+    val jobId = activeJobForStage(stage)
+    if (jobId.isDefined) {
+      logDebug(&quot;submitStage(&quot; + stage + &quot;)&quot;)
+      if (!waitingStages(stage) &amp;&amp; !runningStages(stage) &amp;&amp; !failedStages(stage)) {
+         //计算当前State的父Stage
+        val missing = getMissingParentStages(stage).sortBy(_.id)
+        logDebug(&quot;missing: &quot; + missing)
+        if (missing.isEmpty) {
+          logInfo(&quot;Submitting &quot; + stage + &quot; (&quot; + stage.rdd + &quot;), which has no missing parents&quot;)
+           //如果当前的State没有父Stage，就提交当前Stage中的Task
+          submitMissingTasks(stage, jobId.get)
+        } else {
+          for (parent &lt;- missing) {
+            //递归查找当前父Stage的父Stage
+            submitStage(parent)
+          }
+          waitingStages += stage
+        }
+      }
+    } else {
+      abortStage(stage, &quot;No active job for stage &quot; + stage.id, None)
+    }
+  }
+</code></pre>
+<ul>
+<li><code>DAGScheduler</code> - <code>549</code>行 (获取当前State的父State)</li>
+</ul>
+<pre><code class="language-java"> private def getMissingParentStages(stage: Stage): List[Stage] = {
+    val missing = new HashSet[Stage]
+    val visited = new HashSet[RDD[_]]
+    // We are manually maintaining a stack here to prevent StackOverflowError
+    // caused by recursively visiting
+    val waitingForVisit = new ArrayStack[RDD[_]]//栈
+    def visit(rdd: RDD[_]) {
+      if (!visited(rdd)) {
+        visited += rdd
+        val rddHasUncachedPartitions = getCacheLocs(rdd).contains(Nil)
+        if (rddHasUncachedPartitions) {
+          for (dep &lt;- rdd.dependencies) {
+            dep match {
+                //如果是宽依赖ShuffleDependency，就添加一个Stage
+              case shufDep: ShuffleDependency，[_, _, _] =&gt;
+                val mapStage = getOrCreateShuffleMapStage(shufDep, stage.firstJobId)
+                if (!mapStage.isAvailable) {
+                  missing += mapStage
+                }
+                //如果是窄依赖NarrowDependency，将当前的父RDD添加到栈中
+              case narrowDep: NarrowDependency[_] =&gt;
+                waitingForVisit.push(narrowDep.rdd)
+            }
+          }
+        }
+      }
+    }
+    waitingForVisit.push(stage.rdd)
+    while (waitingForVisit.nonEmpty) {//循环遍历栈，计算 stage
+      visit(waitingForVisit.pop())
+    }
+    missing.toList
+  }
+</code></pre>
+<ul>
+<li><code>DAGScheduler</code> - <code>1083</code>行 (提交当前Stage的TaskSet)</li>
+</ul>
+<pre><code class="language-java"> private def submitMissingTasks(stage: Stage, jobId: Int) {
+    logDebug(&quot;submitMissingTasks(&quot; + stage + &quot;)&quot;)
+
+    // First figure out the indexes of partition ids to compute.
+    val partitionsToCompute: Seq[Int] = stage.findMissingPartitions()
+
+    // Use the scheduling pool, job group, description, etc. from an ActiveJob associated
+    // with this Stage
+    val properties = jobIdToActiveJob(jobId).properties
+
+    runningStages += stage
+    // SparkListenerStageSubmitted should be posted before testing whether tasks are
+    // serializable. If tasks are not serializable, a SparkListenerStageCompleted event
+    // will be posted, which should always come after a corresponding SparkListenerStageSubmitted
+    // event.
+    stage match {
+      case s: ShuffleMapStage =&gt;
+        outputCommitCoordinator.stageStart(stage = s.id, maxPartitionId = s.numPartitions - 1)
+      case s: ResultStage =&gt;
+        outputCommitCoordinator.stageStart(
+          stage = s.id, maxPartitionId = s.rdd.partitions.length - 1)
+    }
+    val taskIdToLocations: Map[Int, Seq[TaskLocation]] = try {
+      stage match {
+        case s: ShuffleMapStage =&gt;
+          partitionsToCompute.map { id =&gt; (id, getPreferredLocs(stage.rdd, id))}.toMap
+        case s: ResultStage =&gt;
+          partitionsToCompute.map { id =&gt;
+            val p = s.partitions(id)
+            (id, getPreferredLocs(stage.rdd, p))
+          }.toMap
+      }
+    } catch {
+      case NonFatal(e) =&gt;
+        stage.makeNewStageAttempt(partitionsToCompute.size)
+        listenerBus.post(SparkListenerStageSubmitted(stage.latestInfo, properties))
+        abortStage(stage, s&quot;Task creation failed: $e\n${Utils.exceptionString(e)}&quot;, Some(e))
+        runningStages -= stage
+        return
+    }
+
+    stage.makeNewStageAttempt(partitionsToCompute.size, taskIdToLocations.values.toSeq)
+
+    // If there are tasks to execute, record the submission time of the stage. Otherwise,
+    // post the even without the submission time, which indicates that this stage was
+    // skipped.
+    if (partitionsToCompute.nonEmpty) {
+      stage.latestInfo.submissionTime = Some(clock.getTimeMillis())
+    }
+    listenerBus.post(SparkListenerStageSubmitted(stage.latestInfo, properties))
+
+    // TODO: Maybe we can keep the taskBinary in Stage to avoid serializing it multiple times.
+    // Broadcasted binary for the task, used to dispatch tasks to executors. Note that we broadcast
+    // the serialized copy of the RDD and for each task we will deserialize it, which means each
+    // task gets a different copy of the RDD. This provides stronger isolation between tasks that
+    // might modify state of objects referenced in their closures. This is necessary in Hadoop
+    // where the JobConf/Configuration object is not thread-safe.
+    var taskBinary: Broadcast[Array[Byte]] = null
+    var partitions: Array[Partition] = null
+    try {
+      // For ShuffleMapTask, serialize and broadcast (rdd, shuffleDep).
+      // For ResultTask, serialize and broadcast (rdd, func).
+      var taskBinaryBytes: Array[Byte] = null
+      // taskBinaryBytes and partitions are both effected by the checkpoint status. We need
+      // this synchronization in case another concurrent job is checkpointing this RDD, so we get a
+      // consistent view of both variables.
+      RDDCheckpointData.synchronized {
+        taskBinaryBytes = stage match {
+          case stage: ShuffleMapStage =&gt;
+            JavaUtils.bufferToArray(
+              closureSerializer.serialize((stage.rdd, stage.shuffleDep): AnyRef))
+          case stage: ResultStage =&gt;
+            JavaUtils.bufferToArray(closureSerializer.serialize((stage.rdd, stage.func): AnyRef))
+        }
+
+        partitions = stage.rdd.partitions
+      }
+
+      taskBinary = sc.broadcast(taskBinaryBytes)
+    } catch {
+      // In the case of a failure during serialization, abort the stage.
+      case e: NotSerializableException =&gt;
+        abortStage(stage, &quot;Task not serializable: &quot; + e.toString, Some(e))
+        runningStages -= stage
+
+        // Abort execution
+        return
+      case e: Throwable =&gt;
+        abortStage(stage, s&quot;Task serialization failed: $e\n${Utils.exceptionString(e)}&quot;, Some(e))
+        runningStages -= stage
+
+        // Abort execution
+        return
+    }
+
+    val tasks: Seq[Task[_]] = try {
+      val serializedTaskMetrics = closureSerializer.serialize(stage.latestInfo.taskMetrics).array()
+      stage match {
+        case stage: ShuffleMapStage =&gt;
+          stage.pendingPartitions.clear()
+          partitionsToCompute.map { id =&gt;
+            val locs = taskIdToLocations(id)
+            val part = partitions(id)
+            stage.pendingPartitions += id
+            new ShuffleMapTask(stage.id, stage.latestInfo.attemptNumber,
+              taskBinary, part, locs, properties, serializedTaskMetrics, Option(jobId),
+              Option(sc.applicationId), sc.applicationAttemptId, stage.rdd.isBarrier())
+          }
+
+        case stage: ResultStage =&gt;
+          partitionsToCompute.map { id =&gt;
+            val p: Int = stage.partitions(id)
+            val part = partitions(p)
+            val locs = taskIdToLocations(id)
+            new ResultTask(stage.id, stage.latestInfo.attemptNumber,
+              taskBinary, part, locs, id, properties, serializedTaskMetrics,
+              Option(jobId), Option(sc.applicationId), sc.applicationAttemptId,
+              stage.rdd.isBarrier())
+          }
+      }
+    } catch {
+      case NonFatal(e) =&gt;
+        abortStage(stage, s&quot;Task creation failed: $e\n${Utils.exceptionString(e)}&quot;, Some(e))
+        runningStages -= stage
+        return
+    }
+
+    if (tasks.size &gt; 0) {
+      logInfo(s&quot;Submitting ${tasks.size} missing tasks from $stage (${stage.rdd}) (first 15 &quot; +
+        s&quot;tasks are for partitions ${tasks.take(15).map(_.partitionId)})&quot;)
+      taskScheduler.submitTasks(new TaskSet(
+        tasks.toArray, stage.id, stage.latestInfo.attemptNumber, jobId, properties))
+    } else {
+      // Because we posted SparkListenerStageSubmitted earlier, we should mark
+      // the stage as completed here in case there are no tasks to run
+      markStageAsFinished(stage, None)
+
+      stage match {
+        case stage: ShuffleMapStage =&gt;
+          logDebug(s&quot;Stage ${stage} is actually done; &quot; +
+              s&quot;(available: ${stage.isAvailable},&quot; +
+              s&quot;available outputs: ${stage.numAvailableOutputs},&quot; +
+              s&quot;partitions: ${stage.numPartitions})&quot;)
+          markMapStageJobsAsFinished(stage)
+        case stage : ResultStage =&gt;
+          logDebug(s&quot;Stage ${stage} is actually done; (partitions: ${stage.numPartitions})&quot;)
+      }
+      submitWaitingChildStages(stage)
+    }
+  }
+</code></pre>
+<h2 id="小结">小结</h2>
+<p>通过以上源码分析，可以得出Spark所谓宽窄依赖事实上指的是<code>ShuffleDependency</code>或者是<code>NarrowDependency</code>如果是<code>ShuffleDependency</code>系统会生成一个<code>ShuffeMapStage</code>,如果是<code>NarrowDependency</code>则忽略，归为当前Stage。当系统回推到起始RDD的时候因为发现当前RDD或者ShuffleMapStage没有父Stage的时候，当前系统会将当前State下的Task封装成<code>ShuffleMapTask</code>(如果是ResultStage就是<code>ResultTask</code>),当前Task的数目等于当前state分区的分区数。然后将Task封装成TaskSet通过调用taskScheduler.submitTasks将任务提交给集群。</p>
+<h2 id="rdd缓存机制">RDD缓存机制</h2>
+<p>缓存是一种RDD计算容错的一种手段，程序在RDD数据丢失的时候，可以通过缓存快速计算当前RDD的值，而不需要反推出所有的RDD重新计算，因此Spark在需要对某个RDD多次使用的时候，为了提高程序的执行效率用户可以考虑使用RDD的cache。如下测试：</p>
+<pre><code class="language-java">val conf = new SparkConf()
+	.setAppName(&quot;word-count&quot;)
+	.setMaster(&quot;local[2]&quot;)
+val sc = new SparkContext(conf)
+val value: RDD[String] = sc.textFile(&quot;file:///D:/demo/words/&quot;)
+   .cache()
+value.count()
+
+var begin=System.currentTimeMillis()
+value.count()
+var end=System.currentTimeMillis()
+println(&quot;耗时：&quot;+ (end-begin))//耗时：253
+
+//失效缓存
+value.unpersist()
+begin=System.currentTimeMillis()
+value.count()
+end=System.currentTimeMillis()
+println(&quot;不使用缓存耗时：&quot;+ (end-begin))//2029
+sc.stop()
+</code></pre>
+<p>除了调用cache之外，Spark提供了更细粒度的RDD缓存方案，用户可以根据集群的内存状态选择合适的缓存策略。用户可以使用persist方法指定缓存级别。缓存级别有如下可选项：</p>
+<pre><code class="language-java">val NONE = new StorageLevel(false, false, false, false)
+val DISK_ONLY = new StorageLevel(true, false, false, false)
+val DISK_ONLY_2 = new StorageLevel(true, false, false, false, 2)
+val MEMORY_ONLY = new StorageLevel(false, true, false, true)
+val MEMORY_ONLY_2 = new StorageLevel(false, true, false, true, 2)
+val MEMORY_ONLY_SER = new StorageLevel(false, true, false, false)
+val MEMORY_ONLY_SER_2 = new StorageLevel(false, true, false, false, 2)
+val MEMORY_AND_DISK = new StorageLevel(true, true, false, true)
+val MEMORY_AND_DISK_2 = new StorageLevel(true, true, false, true, 2)
+val MEMORY_AND_DISK_SER = new StorageLevel(true, true, false, false)
+val MEMORY_AND_DISK_SER_2 = new StorageLevel(true, true, false, false, 2)
+val OFF_HEAP = new StorageLevel(true, true, true, false, 1)
+</code></pre>
+<pre><code class="language-java">xxRDD.persist(StorageLevel.MEMORY_AND_DISK_SER_2)
+</code></pre>
+<p>其中：</p>
+<p><code>MEMORY_ONLY</code>：表示数据完全不经过序列化存储在内存中，效率高，但是有可能导致内存溢出.</p>
+<p><code>MEMORY_ONLY_SER</code>和MEMORY_ONLY一样，只不过需要对RDD的数据做序列化，牺牲CPU节省内存，同样会导致内存溢出可能。</p>
+<blockquote>
+<p>其中<code>_2</code>表示缓存结果有备份，如果大家不确定该使用哪种级别，一般推荐<code>MEMORY_AND_DISK_SER_2</code></p>
+</blockquote>
+<h2 id="check-point-机制">Check Point 机制</h2>
+<p>除了使用缓存机制可以有效的保证RDD的故障恢复，但是如果缓存失效还是会在导致系统重新计算RDD的结果，所以对于一些RDD的lineage较长的场景，计算比较耗时，用户可以尝试使用checkpoint机制存储RDD的计算结果，该种机制和缓存最大的不同在于，使用checkpoint之后被checkpoint的RDD数据直接持久化在文件系统中，一般推荐将结果写在hdfs中，这种checpoint并不会自动清空。注意checkpoint在计算的过程中先是对RDD做mark，在任务执行结束后，再对mark的RDD实行checkpoint，也就是要重新计算被Mark之后的rdd的依赖和结果，因此为了避免Mark RDD重复计算，推荐使用策略</p>
+<pre><code class="language-java">val conf = new SparkConf().setMaster(&quot;yarn&quot;).setAppName(&quot;wordcount&quot;)
+val sc = new SparkContext(conf)
+sc.setCheckpointDir(&quot;hdfs:///checkpoints&quot;)
+
+val lineRDD: RDD[String] = sc.textFile(&quot;hdfs:///words/t_word.txt&quot;)
+
+val cacheRdd = lineRDD.flatMap(line =&gt; line.split(&quot; &quot;))
+.map(word =&gt; (word, 1))
+.groupByKey()
+.map(tuple =&gt; (tuple._1, tuple._2.sum))
+.sortBy(tuple =&gt; tuple._2, false, 1)
+.cache()
+cacheRdd.checkpoint()
+
+cacheRdd.collect().foreach(tuple=&gt;println(tuple._1+&quot;-&gt;&quot;+tuple._2))
+cacheRdd.unpersist()
+//3.关闭sc
+sc.stop()
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/aAuqPKSPG/" class="tag">
+                    Spark
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/spark01/">
+                  <h3 class="post-title">
+                    Spark入门(二)——Spark环境搭建与开发环境
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

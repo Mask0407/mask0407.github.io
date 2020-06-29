@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Hadoop HA 高可用集群搭建 | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+环境及准备
+zookeeper集群的搭建
+HA-HDFS分布式集群搭建
+
+
+
+(HDFS分布式集群搭建【高级版】)
+HDFS集群要保证NameNode的高可用性，为了让NameNode更安全，这里选择用ZooKeeper集群来保证
+环..." />
+    <meta name="keywords" content="Hadoop,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Hadoop HA 高可用集群搭建</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E7%8E%AF%E5%A2%83%E5%8F%8A%E5%87%86%E5%A4%87">环境及准备</a></li>
+<li><a href="#zookeeper%E9%9B%86%E7%BE%A4%E7%9A%84%E6%90%AD%E5%BB%BA">zookeeper集群的搭建</a></li>
+<li><a href="#ha-hdfs%E5%88%86%E5%B8%83%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA">HA-HDFS分布式集群搭建</a></li>
+</ul>
+</li>
+</ul>
+(HDFS分布式集群搭建【高级版】)<br>
+HDFS集群要保证NameNode的高可用性，为了让NameNode更安全，这里选择用ZooKeeper集群来保证</p>
+<h2 id="环境及准备">环境及准备</h2>
+<p>同上篇普通版</p>
+<h2 id="zookeeper集群的搭建">zookeeper集群的搭建</h2>
+<ol>
+<li>下载并解压zookeeper</li>
+<li>在zookeeper根目录下创建data文件夹</li>
+<li>进入conf文件夹修改配置<br>
+3.1 修改zoo_sample.cfg 名字为 zoo.cfg<br>
+3.2 编辑 zoo.cfg</li>
+</ol>
+<pre><code class="language-xml">       dataDir=/opt/install/zookeeper-3.4.5/data
+
+       server.0=hadoop1.msk.com:2888:3888
+       server.1=hadoop2.msk.com:2888:3888
+       server.2=hadoop3.msk.com:2888:3888
+</code></pre>
+<ol start="4">
+<li>在zookeeper/data下创建myid文件</li>
+</ol>
+<pre><code>第一台节点myid里面填0  第二台  1  以此类推（三台机器分别为 0,1,2）
+</code></pre>
+<ol start="5">
+<li>用主节点分别ssh免密登录三台机器（包括主节点自身)<br>
+<strong>zookeeper的启停命令</strong></li>
+</ol>
+<pre><code>bin/zkServer.sh start | stop | restart | status
+</code></pre>
+<p><strong>zookeeper客户端命令</strong></p>
+<ul>
+<li>注：在zookeeper的主节点运行</li>
+</ul>
+<pre><code> bin/zkCli.sh
+</code></pre>
+<h2 id="ha-hdfs分布式集群搭建">HA-HDFS分布式集群搭建</h2>
+<ul>
+<li>如果使用的是以前的普通集群建议先清空data/tmp，如果是新环境可以参考以往基础版集群文章搭建基础环境</li>
+</ul>
+<ol>
+<li>配置文件的修改<br>
+<strong>core-site.xml</strong></li>
+</ol>
+<pre><code class="language-xml">&lt;!--  这里的ns随意  只是入口  --&gt;
+       &lt;property&gt;		
+			&lt;name&gt;fs.defaultFS&lt;/name&gt;
+			&lt;value&gt;hdfs://ns&lt;/value&gt;
+	   &lt;/property&gt;
+	   &lt;property&gt;
+			&lt;name&gt;hadoop.tmp.dir&lt;/name&gt;
+			&lt;value&gt;/opt/install/hadoop-2.5.2/data/tmp&lt;/value&gt;
+	   &lt;/property&gt;
+	   &lt;property&gt;
+		    &lt;name&gt;ha.zookeeper.quorum&lt;/name&gt;
+            &lt;value&gt;hadoop1.msk.com:2181,hadoop2.msk.com:2181,hadoop3.msk.com:2181&lt;/value&gt;
+	   &lt;/property&gt;
+</code></pre>
+<p>**hdfs-site.xml **</p>
+<pre><code class="language-xml">&lt;property&gt;
+		  &lt;name&gt;dfs.permissions.enabled&lt;/name&gt;
+		  &lt;value&gt;false&lt;/value&gt;
+	  &lt;/property&gt;
+		
+	  &lt;!--指定hdfs的nameservice为ns，需要和core-site.xml中的保持一致 --&gt;
+	  &lt;property&gt;
+		  &lt;name&gt;dfs.nameservices&lt;/name&gt;
+		  &lt;value&gt;ns&lt;/value&gt;
+	  &lt;/property&gt;
+	  &lt;!-- ns下面有两个NameNode，分别是nn1，nn2 --&gt;
+	  &lt;property&gt;
+		  &lt;name&gt;dfs.ha.namenodes.ns&lt;/name&gt;
+		  &lt;value&gt;nn1,nn2&lt;/value&gt;
+	  &lt;/property&gt;
+  &lt;!-- nn1的RPC通信地址 --&gt;
+	  &lt;property&gt;
+		  &lt;name&gt;dfs.namenode.rpc-address.ns.nn1&lt;/name&gt;
+		  &lt;value&gt;hadoop1.msk.com:8020&lt;/value&gt;
+	  &lt;/property&gt;
+	  &lt;!-- nn1的http通信地址 --&gt;
+	  &lt;property&gt;
+		  &lt;name&gt;dfs.namenode.http-address.ns.nn1&lt;/name&gt;
+		  &lt;value&gt;hadoop1.msk.com:50070&lt;/value&gt;
+	  &lt;/property&gt;
+  &lt;!-- nn2的RPC通信地址 --&gt;
+	  &lt;property&gt;
+		  &lt;name&gt;dfs.namenode.rpc-address.ns.nn2&lt;/name&gt;
+		  &lt;value&gt;hadoop2.msk.com:8020&lt;/value&gt;
+	  &lt;/property&gt;
+	  &lt;!-- nn2的http通信地址 --&gt;
+	  &lt;property&gt;
+		  &lt;name&gt;dfs.namenode.http-address.ns.nn2&lt;/name&gt;
+		  &lt;value&gt;hadoop2.msk.com:50070&lt;/value&gt;
+	  &lt;/property&gt;
+
+	&lt;!-- 指定NameNode的元数据在JournalNode上的存放位置 --&gt;
+	&lt;property&gt;
+		&lt;name&gt;dfs.namenode.shared.edits.dir&lt;/name&gt;
+		&lt;value&gt;qjournal://hadoop1.msk.com:8485;hadoop2.msk.com:8485;hadoop3.msk.com:8485/ns&lt;/value&gt;
+	&lt;/property&gt;
+&lt;!-- 指定JournalNode在本地磁盘存放数据的位置 --&gt;
+	&lt;property&gt;
+		&lt;name&gt;dfs.journalnode.edits.dir&lt;/name&gt;
+		&lt;value&gt;/opt/install/hadoop-2.5.2/journal&lt;/value&gt;
+	&lt;/property&gt;
+	&lt;!-- 开启NameNode故障时自动切换 --&gt;
+	&lt;property&gt;
+		&lt;name&gt;dfs.ha.automatic-failover.enabled&lt;/name&gt;
+		&lt;value&gt;true&lt;/value&gt;
+	&lt;/property&gt;
+    &lt;!-- 配置失败自动切换实现方式 --&gt;
+	&lt;property&gt;
+		&lt;name&gt;dfs.client.failover.proxy.provider.ns&lt;/name&gt;
+		&lt;value&gt;org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider&lt;/value&gt;
+	&lt;/property&gt;
+	&lt;!-- 配置隔离机制，如果ssh是默认22端口，value直接写sshfence即可 --&gt;
+	&lt;property&gt;
+		&lt;name&gt;dfs.ha.fencing.methods&lt;/name&gt;
+		&lt;value&gt;sshfence&lt;/value&gt;
+	&lt;/property&gt;
+	&lt;!-- 使用隔离机制时需要ssh免登陆 --&gt;
+	&lt;property&gt;
+		&lt;name&gt;dfs.ha.fencing.ssh.private-key-files&lt;/name&gt;
+		&lt;value&gt;/root/.ssh/id_rsa&lt;/value&gt;
+	&lt;/property&gt;
+</code></pre>
+<p><strong>yarn-env.sh</strong></p>
+<pre><code class="language-xml">export JAVA_HOME=/usr/java/jdk1.7.0_71
+</code></pre>
+<ol start="2">
+<li>首先启动zookeeper集群（三台都要执行启动zookeeper服务指令）</li>
+<li>在主NameNode节点格式化zkfc</li>
+</ol>
+<pre><code>    bin/hdfs zkfc -formatZK
+</code></pre>
+<ol start="4">
+<li>在每个journalnode节点用如下命令启动journalnode</li>
+</ol>
+<pre><code>    sbin/hadoop-daemon.sh start journalnode
+</code></pre>
+<ol start="5">
+<li>在主namenode节点格式化namenode和journalnode目录</li>
+</ol>
+<pre><code>     bin/hdfs namenode -format ns
+</code></pre>
+<ol start="6">
+<li>在主namenode节点启动namenode进程</li>
+</ol>
+<pre><code>     sbin/hadoop-daemon.sh start namenode
+</code></pre>
+<ol start="7">
+<li>在备namenode节点执行第一行命令，这个是把备namenode节点的目录格式化并把元数据从主namenode节点copy过来，并且这个命令不会把journalnode目录再格式化了！然后用第二个命令启动备namenode进程</li>
+</ol>
+<pre><code>     bin/hdfs namenode -bootstrapStandby
+     sbin/hadoop-daemon.sh start namenode
+</code></pre>
+<ol start="8">
+<li>在两个namenode节点都执行以下命令</li>
+</ol>
+<pre><code>     sbin/hadoop-daemon.sh start zkfc
+</code></pre>
+<ol start="9">
+<li>在所有datanode节点都执行以下命令启动datanode</li>
+</ol>
+<pre><code>    sbin/hadoop-daemon.sh start datanode
+</code></pre>
+<ol start="10">
+<li>日常启停命令</li>
+</ol>
+<pre><code>    sbin/start-dfs.sh
+    sbin/stop-dfs.sh
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/mWPQYQko7/" class="tag">
+                    Hadoop
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/hadoop01/">
+                  <h3 class="post-title">
+                    Hadoop 基础分布式集群搭建及使用
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

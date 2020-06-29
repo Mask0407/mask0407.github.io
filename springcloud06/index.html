@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Feign开启HyStrix后如何配置线程隔离及熔断策略 | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+Feign集成Hystrix默认是关闭Hystrix的，只有在配置文件中设置feign.hystrix.enabled=true才会开启Hystrix。
+
+开启Hystrix后feign之间的方法调用就会默认启动新的线程执行和主程序不在一..." />
+    <meta name="keywords" content="SpringCloud,微服务" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Feign开启HyStrix后如何配置线程隔离及熔断策略</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <blockquote>
+<p>Feign集成Hystrix默认是关闭Hystrix的，只有在配置文件中设置<code>feign.hystrix.enabled=true</code>才会开启Hystrix。</p>
+</blockquote>
+<p>开启Hystrix后feign之间的方法调用就会默认启动新的线程执行和主程序不在一个线程中，因此如果上下文中存在ThreadLocal变量，在该方法中就失效了。因此一般可以通过设置<code>CommandProperties</code>注解属性，设置线程就可以了。</p>
+<p>在和Feign整合后，用户无法配置Feign的<code>ComandProperties</code>，但是可以通过配置Bean的形式配置。</p>
+<pre><code class="language-java">@Configuration
+public class FeignSupportConfig {
+	@Bean
+	public SetterFactory setterFactory(){
+		SetterFactory setterFactory =new SetterFactory() {
+			@Override
+			public HystrixCommand.Setter create(Target&lt;?&gt; target, Method method) {
+
+				String groupKey = target.name();
+				String commandKey = Feign.configKey(target.type(), method);
+
+				HystrixCommandProperties.Setter setter = HystrixCommandProperties.Setter()
+						//设置统计指标60秒为一个时间窗口
+						.withMetricsRollingStatisticalWindowInMilliseconds(1000 * 60)
+						//超过80%失败率
+						.withCircuitBreakerErrorThresholdPercentage(80)
+						//操作5个开启短路器
+						.withCircuitBreakerRequestVolumeThreshold(5)
+						//设置线程隔离
+						.withExecutionIsolationStrategy(HystrixCommandProperties.ExecutionIsolationStrategy.SEMAPHORE)
+						//设置断路器的开启时间为60秒
+						.withCircuitBreakerSleepWindowInMilliseconds(1000 * 60);
+
+				return HystrixCommand.Setter
+						.withGroupKey(HystrixCommandGroupKey.Factory.asKey(groupKey))
+						.andCommandKey(HystrixCommandKey.Factory.asKey(commandKey))
+						.andCommandPropertiesDefaults(setter);
+			}
+		};
+		return setterFactory;
+	}
+
+}
+</code></pre>
+<blockquote>
+<p>然后在@FeignClient中引入该配置</p>
+</blockquote>
+<pre><code class="language-java">@FeignClient(name = &quot;USER-SERVICE&quot;, configuration = FeignSupportConfig.class) //name为服务名
+</code></pre>
+<p>至此，方法调用将会和主线程ID一直。</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/uyhs3Xoe6/" class="tag">
+                    SpringCloud
+                  </a>
+                
+                  <a href="https://mask0407.github.io/rg_9e-j4YM/" class="tag">
+                    微服务
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/springcloud05/">
+                  <h3 class="post-title">
+                    SpringCloud之配置中心-Config
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

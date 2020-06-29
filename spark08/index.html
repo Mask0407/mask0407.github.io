@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Spark入门( 九)——机器学习 Spark MLlib | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+机器学习是什么？
+
+机器学习
+Spark MLlib
+
+
+Spark MLlib案例
+
+快速入门
+基本统计
+
+Correlation(相关性)
+Hypothesis testing(假设检验)
+Summarizer(总结器)
+
+
+未完待续..." />
+    <meta name="keywords" content="机器学习,Spark,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Spark入门( 九)——机器学习 Spark MLlib</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li><a href="#%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E6%98%AF%E4%BB%80%E4%B9%88">机器学习是什么？</a>
+<ul>
+<li><a href="#%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0">机器学习</a></li>
+<li><a href="#spark-mllib">Spark MLlib</a></li>
+</ul>
+</li>
+<li><a href="#spark-mllib%E6%A1%88%E4%BE%8B">Spark MLlib案例</a>
+<ul>
+<li><a href="#%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8">快速入门</a></li>
+<li><a href="#%E5%9F%BA%E6%9C%AC%E7%BB%9F%E8%AE%A1">基本统计</a>
+<ul>
+<li><a href="#correlation%E7%9B%B8%E5%85%B3%E6%80%A7">Correlation(相关性)</a></li>
+<li><a href="#hypothesis-testing%E5%81%87%E8%AE%BE%E6%A3%80%E9%AA%8C">Hypothesis testing(假设检验)</a></li>
+<li><a href="#summarizer%E6%80%BB%E7%BB%93%E5%99%A8">Summarizer(总结器)</a></li>
+</ul>
+</li>
+<li><a href="#%E6%9C%AA%E5%AE%8C%E5%BE%85%E7%BB%AD">未完待续。。。</a></li>
+</ul>
+</li>
+</ul>
+(Spark MLlib)</p>
+<h1 id="机器学习是什么">机器学习是什么？</h1>
+<h2 id="机器学习">机器学习</h2>
+<p>数据挖掘有着50多年的发展历史。机器学习就是其子领域之一，特点是利用大型计算机集群来从海量数据中分析和提取知识</p>
+<p>机器学习与计算统计学密切相关。它与数学优化紧密关联，为其提供方法、理论和应用领域。机器学习在各种传统设计和编程不能胜任的计算机任务中有广泛应用。典型的应用如<code>垃圾邮件过滤</code>、<code>光学字符识别(OCR)</code>、<code>搜索引擎和计算机视觉</code>。机器学习有时和数据挖掘联用，但更偏向<code>探索性数据分析</code>，亦称为<code>无监督学习</code>。</p>
+<p>与学习系统的可用输入自然属性不同，机器学习系统可分为<code>3种</code>。学习算法发现输入数据的内在结构。它可以<code>有目标(隐含模式)</code>,也可以是发现特征的一种途径。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>无监督学习</td>
+<td>学习系统的输入数据中并不包含对应的<code>标签(或期望的输出)</code>，它需要自行从输入中找到输入数据的内在结构</td>
+</tr>
+<tr>
+<td>监督学习</td>
+<td>系统已知各输入对应的<code>期望输出</code>系统的目标是学习如何将输入映射到输出</td>
+</tr>
+<tr>
+<td>强化学习</td>
+<td>系统与环境进行交互，它有已定义的目标，但没有人类显式地告知其是否正在接近目标</td>
+</tr>
+</tbody>
+</table>
+<h2 id="spark-mllib">Spark MLlib</h2>
+<p>MLlib是Spark的机器学习（ML）库。其目标是使实用的机器学习可扩展且容易。在较高级别，它提供了以下工具：</p>
+<blockquote>
+<ul>
+<li>ML算法：常见的学习算法，例如分类，回归，聚类和协同过滤</li>
+<li>特征化：特征提取，变换，降维和选择</li>
+<li>管道：用于构建，评估和调整ML管道的工具</li>
+<li>持久性：保存和加载算法，模型和管道</li>
+<li>实用程序：线性代数，统计信息，数据处理等。</li>
+</ul>
+</blockquote>
+<h1 id="spark-mllib案例">Spark MLlib案例</h1>
+<blockquote>
+<p>基于<code>DataFrame</code>的API是主要API</p>
+</blockquote>
+<h2 id="快速入门">快速入门</h2>
+<ul>
+<li>pom.xml</li>
+</ul>
+<pre><code class="language-xml">&lt;!-- https://mvnrepository.com/artifact/org.apache.spark/spark-mllib --&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+			&lt;artifactId&gt;spark-mllib_2.11&lt;/artifactId&gt;
+			&lt;version&gt;2.2.1&lt;/version&gt;
+		&lt;/dependency&gt;
+</code></pre>
+<pre><code class="language-java">def main(args: Array[String]): Unit = {
+		// 屏蔽日志
+		Logger.getLogger(&quot;org.apache.spark&quot;).setLevel(Level.WARN)
+		Logger.getLogger(&quot;org.apache.jetty.server&quot;).setLevel(Level.OFF)
+
+		val spark = SparkSession
+			.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(Demo01.getClass.getName)
+    		.getOrCreate()
+
+		import spark.implicits._
+
+		val data = Seq(
+			/**
+			 * 稀疏向量表示方式
+			 * 4, Seq((0, 1.0), (3, -2.0))
+			 * 表示向量长度为4 有两个非0位置：0和3位置，0和3的值分别为1.0、-2.0
+			 * 该向量可表示为(1.0, 0, 0, -2.0)
+ 			 */
+			Vectors.sparse(4, Seq((0, 1.0), (3, -2.0))),
+			// 密集向量表示方式
+			Vectors.dense(4.0, 5.0, 0.0, 3.0),
+			Vectors.dense(6.0, 7.0, 0.0, 8.0),
+			Vectors.sparse(4, Seq((0, 9.0), (3, 1.0)))
+		)
+
+		val df = data.map(Tuple1.apply).toDF(&quot;features&quot;)
+		df.show()
+		
+		// 计算df features列的相关性
+		val Row(coeff1: Matrix) = Correlation.corr(df, &quot;features&quot;).head
+		println(s&quot;Pearson correlation matrix:\n $coeff1&quot;)
+
+		val Row(coeff2: Matrix) = Correlation.corr(df, &quot;features&quot;, &quot;spearman&quot;).head
+		println(s&quot;Spearman correlation matrix:\n $coeff2&quot;)
+		
+		spark.stop()
+	}
+</code></pre>
+<h2 id="基本统计">基本统计</h2>
+<h3 id="correlation相关性">Correlation(相关性)</h3>
+<blockquote>
+<p>Correlation 使用指定的方法为向量的输入数据集计算相关矩阵。输出将是一个DataFrame，其中包含向量列的相关矩阵。</p>
+</blockquote>
+<p>皮尔森系数公式：</p>
+<blockquote>
+<p>当两个变量的线性关系增强时，相关系数趋于1或-1。正相关时趋于1，负相关时趋于-1。当两个变量独立时相关系统为0，但反之不成立。当Y和X服从联合正态分布时，其相互独立和不相关是等价的<br>
+<img src="https://img-blog.csdnimg.cn/20200624110228116.png" alt="在这里插入图片描述" loading="lazy"></p>
+</blockquote>
+<pre><code class="language-java">		val data = Seq(
+			/**
+			 * 稀疏向量表示方式
+			 * 4, Seq((0, 1.0), (3, -2.0))
+			 * 表示向量长度为4 有两个非0位置：0和3位置，0和3的值分别为1.0、-2.0
+			 * 该向量可表示为(1.0, 0, 0, -2.0)
+ 			 */
+			Vectors.sparse(4, Seq((0, 1.0), (3, -2.0))),
+			// 密集向量表示方式
+			Vectors.dense(4.0, 5.0, 0.0, 3.0),
+			Vectors.dense(6.0, 7.0, 0.0, 8.0),
+			Vectors.sparse(4, Seq((0, 9.0), (3, 1.0)))
+		)
+
+		val df = data.map(Tuple1.apply).toDF(&quot;features&quot;)
+		df.show()
+		
+		// 计算features的相关性, method系数默认为Pearson
+		val Row(coeff1: Matrix) = Correlation.corr(df, &quot;features&quot;).head
+		println(s&quot;Pearson correlation matrix:\n $coeff1&quot;)
+
+		// 计算features的相关性, method系数为Spearson
+		val Row(coeff2: Matrix) = Correlation.corr(df, &quot;features&quot;, &quot;spearman&quot;).head
+		println(s&quot;Spearman correlation matrix:\n $coeff2&quot;)
+</code></pre>
+<h3 id="hypothesis-testing假设检验">Hypothesis testing(假设检验)</h3>
+<blockquote>
+<p>假设检验是一种强大的统计工具，可用来确定结果是否具有统计学意义，以及该结果是否偶然发生。spark.ml当前支持Pearson的卡方（<code>数学处理错误</code>）测试独立性。<br>
+ChiSquareTest针对标签上的每个功能进行Pearson的独立性测试。对于每个要素，（要素，标签）对将转换为列联矩阵，针对该列矩阵计算卡方统计量。所有标签和特征值必须是分类的。</p>
+</blockquote>
+<pre><code class="language-java">		import org.apache.spark.ml.linalg.{Vector, Vectors}
+		import org.apache.spark.ml.stat.ChiSquareTest
+
+		val data = Seq(
+			(0.0, Vectors.dense(0.5, 10.0)),
+			(0.0, Vectors.dense(1.5, 20.0)),
+			(1.0, Vectors.dense(1.5, 30.0)),
+			(0.0, Vectors.dense(3.5, 30.0)),
+			(0.0, Vectors.dense(3.5, 40.0)),
+			(1.0, Vectors.dense(3.5, 40.0))
+		)
+
+		val df = data.toDF(&quot;label&quot;, &quot;features&quot;)
+		df.show()
+		val chi = ChiSquareTest.test(df, &quot;features&quot;, &quot;label&quot;).head
+		println(s&quot;pValues = ${chi.getAs[Vector](0)}&quot;)
+		println(s&quot;degreesOfFreedom ${chi.getSeq[Int](1).mkString(&quot;[&quot;, &quot;,&quot;, &quot;]&quot;)}&quot;)
+		println(s&quot;statistics ${chi.getAs[Vector](2)}&quot;)
+</code></pre>
+<h3 id="summarizer总结器">Summarizer(总结器)</h3>
+<pre><code class="language-java">		import spark.implicits._
+		import org.apache.spark.ml.stat.Summarizer._
+
+		val data = Seq(
+			(Vectors.dense(2.0, 3.0, 5.0), 1.0),
+			(Vectors.dense(4.0, 6.0, 7.0), 2.0)
+		)
+
+		val df = data.toDF(&quot;features&quot;, &quot;weight&quot;)
+
+		val (meanVal, varianceVal) = df.select(metrics(&quot;mean&quot;, &quot;variance&quot;)
+			.summary($&quot;features&quot;, $&quot;weight&quot;).as(&quot;summary&quot;))
+			.select(&quot;summary.mean&quot;, &quot;summary.variance&quot;)
+			.as[(Vector, Vector)].first()
+
+		println(s&quot;with weight: mean = ${meanVal}, variance = ${varianceVal}&quot;)
+
+		val (meanVal2, varianceVal2) = df.select(mean($&quot;features&quot;), variance($&quot;features&quot;))
+			.as[(Vector, Vector)].first()
+
+		println(s&quot;without weight: mean = ${meanVal2}, sum = ${varianceVal2}&quot;)
+</code></pre>
+<h2 id="未完待续">未完待续。。。</h2>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/WwvK-h-X5/" class="tag">
+                    机器学习
+                  </a>
+                
+                  <a href="https://mask0407.github.io/aAuqPKSPG/" class="tag">
+                    Spark
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/spark07/">
+                  <h3 class="post-title">
+                    Spark入门( 八)——Spark流计算新玩法-Structured Streaming
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

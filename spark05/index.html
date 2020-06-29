@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Spark入门(六)——最全的Saprk SQL算子介绍与使用(上) | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+Datasets &amp; DataFrames简介
+
+快速入门
+
+
+Dataset &amp; DataFrame实战
+
+Dataset create
+
+case-class
+Tuple(元组)
+json数据
+RDD
+
+
+Data..." />
+    <meta name="keywords" content="Spark,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Spark入门(六)——最全的Saprk SQL算子介绍与使用(上)</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#datasets-dataframes%E7%AE%80%E4%BB%8B">Datasets &amp; DataFrames简介</a>
+<ul>
+<li><a href="#%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8">快速入门</a></li>
+</ul>
+</li>
+<li><a href="#dataset-dataframe%E5%AE%9E%E6%88%98">Dataset &amp; DataFrame实战</a>
+<ul>
+<li><a href="#dataset-create">Dataset create</a>
+<ul>
+<li><a href="#case-class">case-class</a></li>
+<li><a href="#tuple%E5%85%83%E7%BB%84">Tuple(元组)</a></li>
+<li><a href="#json%E6%95%B0%E6%8D%AE">json数据</a></li>
+<li><a href="#rdd">RDD</a></li>
+</ul>
+</li>
+<li><a href="#dataframe-create">Dataframe create</a>
+<ul>
+<li><a href="#json%E6%96%87%E4%BB%B6">json文件</a></li>
+<li><a href="#case-class-2">case-class</a></li>
+<li><a href="#tuple%E5%85%83%E7%BB%84-2">Tuple(元组)</a></li>
+<li><a href="#rdd%E8%BD%AC%E6%8D%A2">RDD转换</a></li>
+</ul>
+</li>
+<li><a href="#dataframe-operationsuntypeddataframe%E6%97%A0%E7%B1%BB%E5%9E%8B%E6%93%8D%E4%BD%9C">DataFrame Operations（Untyped）DataFrame无类型操作</a>
+<ul>
+<li><a href="#printschema-%E6%89%93%E5%8D%B0dataframe%E7%9A%84%E8%A1%A8%E7%BB%93%E6%9E%84%E8%A1%A8%E5%A4%B4">printSchema 打印Dataframe的表结构（表头）</a></li>
+<li><a href="#show">show</a></li>
+<li><a href="#select">select</a></li>
+<li><a href="#selectexpr">selectExpr</a></li>
+<li><a href="#withcolumn">withColumn</a></li>
+<li><a href="#withcolumnrenamed">withColumnRenamed</a></li>
+<li><a href="#drop">drop</a></li>
+<li><a href="#dropduplicates">dropDuplicates</a></li>
+<li><a href="#orderbysort">orderBy|sort</a></li>
+<li><a href="#groupby">groupBy</a></li>
+<li><a href="#agg">agg</a></li>
+<li><a href="#limit">limit</a></li>
+<li><a href="#where">where</a></li>
+<li><a href="#pivot%E8%A1%8C%E8%BD%AC%E5%88%97">pivot（行转列）</a></li>
+<li><a href="#na%E6%9B%BF%E6%8D%A2%E5%BD%93%E5%89%8D%E4%B8%BAnull%E7%9A%84%E5%80%BC">na(替换当前为null的值)</a></li>
+<li><a href="#join">join</a></li>
+<li><a href="#cube%E5%A4%9A%E7%BB%B4%E5%BA%A6">cube(多维度)</a></li>
+</ul>
+</li>
+<li><a href="#dataset-oprations-strong-typed-%E6%95%B0%E6%8D%AE%E9%9B%86%E6%93%8D%E4%BD%9C-%E5%BC%BA%E7%B1%BB%E5%9E%8B">Dataset Oprations (Strong typed) 数据集操作-强类型</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+(Spark SQL)</p>
+<p>Spark SQL是构建在RDD之上的ETL（Extract Transform Load）工具。SparkSQL在RDD之上抽象出来<code>Dataset/Dataframe</code> 这两个类提供了类似RDD的功能，也就意味用户可以使用map、faltMap、filter等高阶算子，同时也通过了基于列的命名查询，也就是说Dataset/DataFrame提供了两套操作数据的API，这些API可以给Saprk引擎要提供更多信息，系统可可以根据这些信息对计算实现一定的优化。目前Spark SQL提供了两种交互方式</p>
+<ol>
+<li><code>SQL 脚本</code></li>
+<li><code>Dataset API</code>(strong-typed类型、untyped类型操作)</li>
+</ol>
+<h2 id="datasets-dataframes简介">Datasets &amp; DataFrames简介</h2>
+<p>Dataset是一个分布式数据集，Dataset是在spark-1.6提出新的API，该API构建在RDD（strong type，使用lambda表达式）之上同时可以借助于Spark SQL对执行引擎的优点，使得使用Dateset执行一些数据的转换比直接使用RDD算子功能和性能都有所提升。因此我们可以认为Dateset就是一个加强版本的RDD。 Dataset除了可以使用JVM中数组|集合对象创建之外，也可以将任意的一个RDD转换为Dataset.<br>
+<code>Python does not have the support for the Dataset API.</code></p>
+<p>DataFrames 是Dataset的一种特殊情况。比如 Dataset中可以存储任意 对象类型的数据作为Dataset的元素。但是Dataframe的元素只有一种类型Row类型，这种基于Row查询和传统数据库中ResultSet操作极其相似。因为Row类型的数据表示Dataframe的一个元素，类似数据库中的一行，这些行中的元素可以通过下标或者column name访问。由于 Dateset是API的兼容或者支持度上不是多么的好，但是Dataframe在 API层面支持的Scala、Java、R、Python支持比较全面。</p>
+<h3 id="快速入门">快速入门</h3>
+<ul>
+<li>引入依赖</li>
+</ul>
+<pre><code class="language-xml">&lt;dependency&gt; 
+	&lt;groupId&gt;org.apache.spark&lt;/groupId&gt; 
+	&lt;artifactId&gt;spark-core_2.11&lt;/artifactId&gt;
+    &lt;version&gt;2.4.3&lt;/version&gt; 
+&lt;/dependency&gt; 
+&lt;dependency&gt; 
+	&lt;groupId&gt;org.apache.spark&lt;/groupId&gt; 
+	&lt;artifactId&gt;spark-sql_2.11&lt;/artifactId&gt; 
+	&lt;version&gt;2.4.3&lt;/version&gt; 
+&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>创建字符统计（untyped）</li>
+</ul>
+<pre><code class="language-java">def main(args: Array[String]): Unit = {
+		//1.创建SparkSeesion
+		val spark = SparkSession
+			.builder()
+			.appName(&quot;wordcount&quot;)
+			.master(&quot;local[6]&quot;)
+			.getOrCreate()
+
+		//2.导入spark定义隐式增强|转换
+		import spark.implicits._
+
+		//3.创建dataset
+		val lines = Array(&quot;this is a demo&quot;, &quot;hello spark&quot;)
+		val wordRDD = spark.sparkContext
+			.makeRDD(lines)
+			.flatMap(_.split(&quot;\\s+&quot;))
+			.map((_, 1))
+
+		val ds: Dataset[(String, Int)] = wordRDD.toDS()
+		
+		//4.对Dataset执行sql算子操作
+		ds.groupBy($&quot;_1&quot;)
+			//无类型操作
+			.sum(&quot;_2&quot;)
+			.as(&quot;total&quot;)
+			.withColumnRenamed(&quot;_1&quot;, &quot;word&quot;)
+			.withColumnRenamed(&quot;sum(_2)&quot;, &quot;total&quot;)
+			.show()
+		//5.关闭spark
+		spark.stop()
+}
+</code></pre>
+<ul>
+<li>创建字符统计（strong typed）</li>
+</ul>
+<pre><code class="language-java">def main(args: Array[String]): Unit = {
+		//1.创建SparkSeesion 
+		val spark = SparkSession
+			.builder()
+			.appName(&quot;wordcount&quot;)
+			.master(&quot;local[6]&quot;)
+			.getOrCreate()
+
+		//2.导入spark定义隐式增强|转换
+
+		import spark.implicits._
+
+		//3.创建dataset 
+		val lines = Array(&quot;this is a demo&quot;, &quot;hello spark&quot;)
+		val wordRDD = spark.sparkContext
+			.makeRDD(lines)
+			.flatMap(_.split(&quot;\\s+&quot;))
+			.map((_, 1))
+		val ds: Dataset[(String, Int)] = wordRDD.toDS()
+
+		//4.对Dataset执行sql算子操作 
+		ds.groupByKey(t =&gt; t._1)
+			.agg(typed.sum[(String, Int)](tuple =&gt; tuple._2).name(&quot;total&quot;))
+			.show()
+
+		//5.关闭spark 
+		spark.stop()
+}
+</code></pre>
+<h2 id="dataset-dataframe实战">Dataset &amp; DataFrame实战</h2>
+<h3 id="dataset-create">Dataset create</h3>
+<p>Dataset类似于RDD，不同的是Spark SQL有一套自己的序列化规范独立于Spark RDD（Java/Kryo序列化）之上称为Encoders。不同于SparkRDD序列化，由于Dataset支持无类型操作，用户无需获取操作的类型，操作仅仅是列名，因为Spark SQL在执行算子操作的时候可以省略反序列化的步骤，继而提升程序执行<br>
+效率。</p>
+<h4 id="case-class">case-class</h4>
+<pre><code class="language-java">// case-class
+case class Person(id: Int, name: String, age: Int, sex: Boolean)
+</code></pre>
+<pre><code class="language-java">/**
+* case-class
+*/
+val person: Dataset[Person] = List(
+   Person(1, &quot;zhangsan&quot;, 18, true),
+   Person(2, &quot;lisi&quot;, 28, true)
+)
+   .toDS()
+person.select($&quot;id&quot;, $&quot;name&quot;)
+   .show()
+</code></pre>
+<blockquote>
+<p>注：</p>
+<ul>
+<li>加入隐式转换 import spark.implicits._   该语句需要放在获取spark对象的语句之后</li>
+<li>case class Person(id: Int, name: String, age: Int, sex: Boolean) 的定义需要放在方法的作用域之外（即<code>Scala/Java</code>的成员变量位置）</li>
+<li>如果case类是java编写，则java bean需要实现 <code>Serializable</code>，以及增加<code>get、set</code>方法</li>
+</ul>
+</blockquote>
+<p>结果:</p>
+<pre><code>+---+--------+
+| id|    name|
++---+--------+
+|  1|zhangsan|
+|  2|    lisi|
++---+--------+
+</code></pre>
+<h4 id="tuple元组">Tuple(元组)</h4>
+<pre><code class="language-java">/**
+ * tuple
+ */
+val person: Dataset[(Int, String, Int, Boolean)] = List(
+	(1, &quot;zhangsan&quot;, 18, true),
+	(2, &quot;lisi&quot;, 28, true)
+)
+	.toDS()
+person.select($&quot;_1&quot;, $&quot;_2&quot;).show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+--------+
+| _1|      _2|
++---+--------+
+|  1|zhangsan|
+|  2|    lisi|
++---+--------+
+</code></pre>
+<h4 id="json数据">json数据</h4>
+<p>数据：</p>
+<pre><code>{&quot;name&quot;:&quot;张三&quot;,&quot;age&quot;:18}
+{&quot;name&quot;:&quot;李四&quot;,&quot;age&quot;:28}
+{&quot;name&quot;:&quot;王五&quot;,&quot;age&quot;:38}
+</code></pre>
+<pre><code class="language-java">//数值默认是long类型
+case class User(name: String, age: Long)
+</code></pre>
+<pre><code class="language-java">/**
+ * json格式
+ */
+spark.read
+	.json(&quot;file:///Users/mashikang/IdeaProjects/spark_sql/src/main/resources/json/&quot;)
+	.as[User]
+	.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+
+|age|name|
++---+----+
+| 18|张三|
+| 28|李四|
+| 38|王五|
++---+----+
+</code></pre>
+<h4 id="rdd">RDD</h4>
+<ul>
+<li>Tuple(元组)</li>
+</ul>
+<pre><code class="language-java">/**
+ * RDD 元组
+ */
+val userRDD = spark.sparkContext.makeRDD(List((1,&quot;张三&quot;,true,18,15000.0)))
+userRDD.toDS().show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+----+---+-------+
+| _1|  _2|  _3| _4|     _5|
++---+----+----+---+-------+
+|  1|张三|true| 18|15000.0|
++---+----+----+---+-------+
+</code></pre>
+<ul>
+<li>case-class</li>
+</ul>
+<pre><code class="language-java">// case-class
+case class Person(id: Int, name: String, age: Int, sex: Boolean)
+</code></pre>
+<pre><code class="language-java">/**
+ * RDD case-class
+ */
+val userRDD = spark.sparkContext.makeRDD(List(Person(1,&quot;张三&quot;,18,true)))
+userRDD.toDS().show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+---+----+
+| id|name|age| sex|
++---+----+---+----+
+|  1|张三| 18|true|
++---+----+---+----+
+</code></pre>
+<h3 id="dataframe-create">Dataframe create</h3>
+<p>DataFrame是一个命名列的数据集，用户可以直接操作 <code>column</code> 因此几乎所有DataFrame推荐操作都是<code>无类型操作</code> 。用户也可以把一个DataFrame看做是 <code>Dataset[Row]</code> 类型的数据集。</p>
+<h4 id="json文件">json文件</h4>
+<pre><code class="language-java">/**
+ * json
+ */
+val dataFrame: DataFrame = spark.read
+	.json(&quot;file:///Users/mashikang/IdeaProjects/spark_sql/src/main/resources/json/&quot;)
+dataFrame.printSchema()
+dataFrame.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>root
+ |-- age: long (nullable = true)
+ |-- name: string (nullable = true)
+
++---+----+
+|age|name|
++---+----+
+| 18|张三|
+| 28|李四|
+| 38|王五|
++---+----+
+</code></pre>
+<h4 id="case-class-2">case-class</h4>
+<pre><code class="language-java">case class User(id:Int,name:String,sex:Boolean)
+</code></pre>
+<pre><code class="language-java">/**
+ * case-class
+ */
+var userDF=List(User(1,&quot;张三&quot;,true))
+	.toDF()
+userDF.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+----+
+| id|name| sex|
++---+----+----+
+|  1|张三|true|
++---+----+----+
+</code></pre>
+<h4 id="tuple元组-2">Tuple(元组)</h4>
+<pre><code class="language-java">/**
+ * Tuple
+ */
+var userDF=List((1,&quot;张三&quot;,true))
+	.toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;) 
+userDF.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+----+
+| id|name| sex|
++---+----+----+
+|  1|张三|true|
++---+----+----+
+</code></pre>
+<h4 id="rdd转换">RDD转换</h4>
+<ul>
+<li>Tuple</li>
+</ul>
+<pre><code class="language-java">/**
+ * RDD Tuple
+ */
+var userDF = spark.sparkContext.parallelize(List((1, &quot;张三&quot;, true)))
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;) //可以指定列
+userDF.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+----+
+| id|name| sex|
++---+----+----+
+|  1|张三|true|
++---+----+----+
+</code></pre>
+<ul>
+<li>case-class</li>
+</ul>
+<pre><code class="language-java">/**
+ * RDD case-class
+ */
+var userDF = spark.sparkContext.parallelize(List(User(1, &quot;张三&quot;, true)))
+	.toDF()
+userDF.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+----+
+| id|name| sex|
++---+----+----+
+|  1|张三|true|
++---+----+----+
+</code></pre>
+<ul>
+<li>RDD[Row]类型转为DataFrame</li>
+</ul>
+<pre><code class="language-java">/**
+ * RDD[Row]转换
+ */
+var userRDD: RDD[Row] = spark.sparkContext.parallelize(List(User(1, &quot;张三&quot;, true)))
+	.map(u =&gt; Row(u.id, u.name, u.sex))
+var schema = new StructType()
+	.add(&quot;id&quot;, IntegerType)
+	.add(&quot;name&quot;, StringType)
+	.add(&quot;sex&quot;, BooleanType)
+var userDF = spark.createDataFrame(userRDD, schema)
+userDF.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+----+
+| id|name| sex|
++---+----+----+
+|  1|张三|true|
++---+----+----+
+</code></pre>
+<ul>
+<li>RDD case-class</li>
+</ul>
+<pre><code class="language-java">/**
+ * RDD case-class
+ */
+var userRDD: RDD[User] = spark.sparkContext
+	.makeRDD(List(User(1, &quot;张三&quot;, true)))
+var userDF = spark.createDataFrame(userRDD)
+userDF.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+----+
+| id|name| sex|
++---+----+----+
+|  1|张三|true|
++---+----+----+
+</code></pre>
+<ul>
+<li>RDD Tuple</li>
+</ul>
+<pre><code class="language-java">/**
+ * RDD Tuple
+ */
+var userRDD:RDD[(Int,String,Boolean)]=spark.sparkContext
+	.makeRDD(List((1,&quot;张三&quot;,true)))
+var userDF=spark.createDataFrame(userRDD)
+userDF.show()
+</code></pre>
+<p>结果:</p>
+<pre><code>+---+----+----+
+| _1|  _2|  _3|
++---+----+----+
+|  1|张三|true|
++---+----+----+
+</code></pre>
+<h3 id="dataframe-operationsuntypeddataframe无类型操作">DataFrame Operations（Untyped）DataFrame无类型操作</h3>
+<h4 id="printschema-打印dataframe的表结构表头">printSchema 打印Dataframe的表结构（表头）</h4>
+<pre><code class="language-java">var df = List((1, &quot;张三&quot;, true))
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;)
+df.printSchema()
+</code></pre>
+<pre><code>root
+ |-- id: integer (nullable = false)
+ |-- name: string (nullable = true)
+ |-- sex: boolean (nullable = false)
+</code></pre>
+<h4 id="show">show</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 1, 15000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+	
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;salary&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+----+------+
+| id|name|salary|
++---+----+------+
+|  1|  zs| 15000|
+|  2|  ls| 15000|
++---+----+------+
+</code></pre>
+<h4 id="select">select</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 1, 18000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+df.select($&quot;id&quot;,$&quot;name&quot;,$&quot;sex&quot;,$&quot;dept&quot;,$&quot;salary&quot; * 12 as &quot;annual_salary&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+-------------+
+| id|name|  sex|dept|annual_salary|
++---+----+-----+----+-------------+
+|  1|  zs| true|   1|       180000|
+|  2|  ls|false|   1|       216000|
++---+----+-----+----+-------------+
+</code></pre>
+<h4 id="selectexpr">selectExpr</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 1, 18000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+//等价 df.select($&quot;id&quot;,$&quot;name&quot;,$&quot;sex&quot;,$&quot;dept&quot;,$&quot;salary&quot; * 12 as &quot;annual_salary&quot;)
+df.selectExpr(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary * 12 as annual_salary&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+-------------+
+| id|name|  sex|dept|annual_salary|
++---+----+-----+----+-------------+
+|  1|  zs| true|   1|       180000|
+|  2|  ls|false|   1|       216000|
++---+----+-----+----+-------------+
+</code></pre>
+<h4 id="withcolumn">withColumn</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 1, 18000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	.withColumn(&quot;annual_salary&quot;, $&quot;salary&quot; * 12)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+------+-------------+
+| id|name|  sex|dept|salary|annual_salary|
++---+----+-----+----+------+-------------+
+|  1|  zs| true|   1| 15000|       180000|
+|  2|  ls|false|   1| 18000|       216000|
++---+----+-----+----+------+-------------+
+</code></pre>
+<h4 id="withcolumnrenamed">withColumnRenamed</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 1, 18000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	.withColumn(&quot;annula_salary&quot;, $&quot;salary&quot; * 12)
+	.withColumnRenamed(&quot;dept&quot;, &quot;department&quot;)
+	.withColumnRenamed(&quot;name&quot;, &quot;username&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+--------+-----+----------+------+-------------+
+| id|username|  sex|department|salary|annula_salary|
++---+--------+-----+----------+------+-------------+
+|  1|      zs| true|         1| 15000|       180000|
+|  2|      ls|false|         1| 18000|       216000|
++---+--------+-----+----------+------+-------------+
+</code></pre>
+<h4 id="drop">drop</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 1, 18000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+
+df.select($&quot;id&quot;,$&quot;name&quot;,$&quot;sex&quot;,$&quot;dept&quot;,$&quot;salary&quot;)
+	.withColumn(&quot;annula_salary&quot;,$&quot;salary&quot; * 12)
+	.withColumnRenamed(&quot;dept&quot;,&quot;department&quot;)
+	.withColumnRenamed(&quot;name&quot;,&quot;username&quot;)
+	.drop(&quot;sex&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+--------+----------+------+-------------+
+| id|username|department|salary|annula_salary|
++---+--------+----------+------+-------------+
+|  1|      zs|         1| 15000|       180000|
+|  2|      ls|         1| 18000|       216000|
++---+--------+----------+------+-------------+
+</code></pre>
+<h4 id="dropduplicates">dropDuplicates</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 1, 18000),
+	(3, &quot;ww&quot;, false, 1, 19000),
+	(4, &quot;zl&quot;, false, 1, 18000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	.dropDuplicates(&quot;sex&quot;, &quot;salary&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+------+
+| id|name|  sex|dept|salary|
++---+----+-----+----+------+
+|  3|  ww|false|   1| 19000|
+|  1|  zs| true|   1| 15000|
+|  2|  ls|false|   1| 18000|
++---+----+-----+----+------+
+</code></pre>
+<h4 id="orderbysort">orderBy|sort</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(5, &quot;zl&quot;, false, 1, 16000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+	
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	.orderBy($&quot;salary&quot; desc, $&quot;id&quot; asc)
+	//.sort($&quot;salary&quot; desc,$&quot;id&quot; asc)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+------+
+| id|name|  sex|dept|salary|
++---+----+-----+----+------+
+|  2|  ls|false|   2| 18000|
+|  4|  zl|false|   1| 18000|
+|  5|  zl|false|   1| 16000|
+|  1|  zs| true|   1| 15000|
+|  3|  ww|false|   2| 14000|
++---+----+-----+----+------+
+</code></pre>
+<h4 id="groupby">groupBy</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(5, &quot;zl&quot;, false, 1, 16000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+	
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	.groupBy($&quot;dept&quot;)
+	.max(&quot;salary&quot;)
+	.show()
+</code></pre>
+<pre><code>+----+-----------+
+|dept|max(salary)|
++----+-----------+
+|   1|      18000|
+|   2|      18000|
++----+-----------+
+</code></pre>
+<blockquote>
+<p>类似的算子还有 max、min、avg|mean、sum、count</p>
+</blockquote>
+<h4 id="agg">agg</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(5, &quot;zl&quot;, false, 1, 16000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+	
+import org.apache.spark.sql.functions._
+
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	.groupBy($&quot;dept&quot;)
+	.agg(max(&quot;salary&quot;) as &quot;max_salary&quot;, avg(&quot;salary&quot;) as &quot;avg_salary&quot;)
+	.show()
+</code></pre>
+<pre><code>+----+----------+------------------+
+|dept|max_salary|        avg_salary|
++----+----------+------------------+
+|   1|     18000|16333.333333333334|
+|   2|     18000|           16000.0|
++----+----------+------------------+
+</code></pre>
+<p>agg 还可以传递表达式</p>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(5, &quot;zl&quot;, false, 1, 16000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+	
+import org.apache.spark.sql.functions._
+
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	.groupBy($&quot;dept&quot;)
+	.agg(Map(&quot;salary&quot;-&gt;&quot;max&quot;,&quot;id&quot;-&gt;&quot;count&quot;))
+	.show()
+</code></pre>
+<pre><code>+----+-----------+---------+
+|dept|max(salary)|count(id)|
++----+-----------+---------+
+|   1|      18000|        3|
+|   2|      18000|        2|
++----+-----------+---------+
+</code></pre>
+<h4 id="limit">limit</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(5, &quot;zl&quot;, false, 1, 16000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	.orderBy($&quot;id&quot; desc)
+	.limit(4)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+------+
+| id|name|  sex|dept|salary|
++---+----+-----+----+------+
+|  5|  zl|false|   1| 16000|
+|  4|  zl|false|   1| 18000|
+|  3|  ww|false|   2| 14000|
+|  2|  ls|false|   2| 18000|
++---+----+-----+----+------+
+</code></pre>
+<h4 id="where">where</h4>
+<pre><code class="language-java">var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(5, &quot;win7&quot;, false, 1, 16000)
+)
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+	
+df.select($&quot;id&quot;, $&quot;name&quot;, $&quot;sex&quot;, $&quot;dept&quot;, $&quot;salary&quot;)
+	//where(&quot;(name like '%s%' and salary &gt; 15000) or name = 'win7'&quot;) 
+	.where(($&quot;name&quot; like &quot;%s%&quot; and $&quot;salary&quot; &gt; 15000) or $&quot;name&quot; === &quot;win7&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+------+
+| id|name|  sex|dept|salary|
++---+----+-----+----+------+
+|  2|  ls|false|   2| 18000|
+|  5|win7|false|   1| 16000|
++---+----+-----+----+------+
+</code></pre>
+<h4 id="pivot行转列">pivot（行转列）</h4>
+<pre><code class="language-java">var scoreDF = List(
+	(1, &quot;math&quot;, 85),
+	(1, &quot;chinese&quot;, 80),
+	(1, &quot;english&quot;, 90),
+	(2, &quot;math&quot;, 90),
+	(2, &quot;chinese&quot;, 80)
+)
+	.toDF(&quot;id&quot;, &quot;course&quot;, &quot;score&quot;)
+	
+import org.apache.spark.sql.functions._
+
+//select id,max(case course when 'math' then score else 0 end )as math ,max(case course when 'chinese' then score else 0 end) as chinese from t_course group by id;
+scoreDF.selectExpr(&quot;id&quot;, &quot;case course when 'math' then score else 0 end as math&quot;, &quot;case course when 'chinese' then score else 0 end as chinese&quot;, &quot;case course when 'english' then score else 0 end as english&quot;)
+	.groupBy(&quot;id&quot;)
+	.agg(max($&quot;math&quot;), max($&quot;chinese&quot;), max($&quot;english&quot;))
+	.show()
+</code></pre>
+<pre><code>+---+---------+------------+------------+
+| id|max(math)|max(chinese)|max(english)|
++---+---------+------------+------------+
+|  1|       85|          80|          90|
+|  2|       90|          80|           0|
++---+---------+------------+------------+
+</code></pre>
+<p>简易写法</p>
+<pre><code class="language-java">var scoreRDD = List(
+	(1, &quot;math&quot;, 85),
+	(1, &quot;chinese&quot;, 80),
+	(1, &quot;english&quot;, 90),
+	(2, &quot;math&quot;, 90),
+	(2, &quot;chinese&quot;, 80)
+)
+scoreRDD.toDF(&quot;id&quot;, &quot;course&quot;, &quot;score&quot;)
+	.groupBy(&quot;id&quot;) 
+	// 					行转列 				可选值
+	.pivot(&quot;course&quot;, scoreRDD.map(t =&gt; t._2).distinct)
+	.max(&quot;score&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+----+-------+-------+
+| id|math|chinese|english|
++---+----+-------+-------+
+|  1|  85|     80|     90|
+|  2|  90|     80|   null|
++---+----+-------+-------+
+</code></pre>
+<h4 id="na替换当前为null的值">na(替换当前为null的值)</h4>
+<pre><code class="language-java">var scoreRDD = List(
+	(1, &quot;math&quot;, 85),
+	(1, &quot;chinese&quot;, 80),
+	(1, &quot;english&quot;, 90),
+	(2, &quot;math&quot;, 90),
+	(2, &quot;chinese&quot;, 80),
+	(3, &quot;math&quot;, 100)
+)
+
+scoreRDD.toDF(&quot;id&quot;, &quot;course&quot;, &quot;score&quot;)
+	.groupBy(&quot;id&quot;)
+	// 					行转列 				可选值
+	.pivot(&quot;course&quot;, scoreRDD.map(t =&gt; t._2).distinct)
+	.max(&quot;score&quot;)
+	.na.fill(Map(&quot;english&quot; -&gt; -1, &quot;chinese&quot; -&gt; 0))
+	.show()
+</code></pre>
+<pre><code>+---+----+-------+-------+
+| id|math|chinese|english|
++---+----+-------+-------+
+|  1|  85|     80|     90|
+|  3| 100|      0|     -1|
+|  2|  90|     80|     -1|
++---+----+-------+-------+
+</code></pre>
+<h4 id="join">join</h4>
+<pre><code class="language-java">case class UserCost(id: Int, category: String, totalCost: Double)
+case class User(id: Int, name: String, sex: Boolean, age: Int, salary: Double)
+</code></pre>
+<pre><code class="language-java">var userCostDF = spark.sparkContext
+	.parallelize(List(
+		UserCost(1, &quot;电脑配件&quot;, 100),
+		UserCost(1, &quot;母婴用品&quot;, 100),
+		UserCost(1, &quot;生活用品&quot;, 100),
+		UserCost(2, &quot;居家美食&quot;, 79),
+		UserCost(2, &quot;消费电子&quot;, 80),
+		UserCost(2, &quot;生活用品&quot;, 100)
+	))
+	.toDF()
+	.withColumnRenamed(&quot;id&quot;, &quot;uid&quot;)
+val categories = userCostDF
+	.select(&quot;category&quot;)
+	.as[(String)]
+	.rdd
+	.distinct
+	.collect()
+var userDF = spark.sparkContext
+	.parallelize(List(
+		User(1, &quot;张晓三&quot;, true, 18, 15000),
+		User(2, &quot;李晓四&quot;, true, 18, 18000),
+		User(3, &quot;王晓五&quot;, false, 18, 10000)
+	))
+	.toDF()
+userDF.join(userCostDF, $&quot;id&quot; === $&quot;uid&quot;, &quot;left_outer&quot;)
+	.drop(&quot;uid&quot;)
+	.groupBy(&quot;id&quot;, &quot;name&quot;)
+	.pivot($&quot;category&quot;, categories)
+	.sum(&quot;totalCost&quot;)
+	.na.fill(0.0)
+	.show()
+</code></pre>
+<pre><code>+---+------+--------+--------+--------+--------+--------+
+| id|  name| 电脑配件| 生活用品| 母婴用品| 居家美食|  消费电子|
++---+------+--------+--------+--------+--------+--------+
+|  1|张晓三|   100.0|   100.0|   100.0|     0.0|     0.0|
+|  3|王晓五|     0.0|     0.0|     0.0|     0.0|     0.0|
+|  2|李晓四|     0.0|   100.0|     0.0|    79.0|    80.0|
++---+------+--------+--------+--------+--------+--------+
+</code></pre>
+<h4 id="cube多维度">cube(多维度)</h4>
+<pre><code class="language-java">import org.apache.spark.sql.functions._
+List(
+	(110, 50, 80, 80),
+	(120, 60, 95, 75),
+	(120, 50, 96, 70)
+)
+	.toDF(&quot;height&quot;, &quot;weight&quot;, &quot;IQ&quot;, &quot;EQ&quot;)
+	.cube($&quot;height&quot;, $&quot;weight&quot;)
+	.agg(avg(&quot;IQ&quot;), avg(&quot;EQ&quot;))
+	.show()
+</code></pre>
+<pre><code>+------+------+-----------------+-------+
+|height|weight|          avg(IQ)|avg(EQ)|
++------+------+-----------------+-------+
+|   110|    50|             80.0|   80.0|
+|   120|  null|             95.5|   72.5|
+|   120|    60|             95.0|   75.0|
+|  null|    60|             95.0|   75.0|
+|  null|  null|90.33333333333333|   75.0|
+|   120|    50|             96.0|   70.0|
+|   110|  null|             80.0|   80.0|
+|  null|    50|             88.0|   75.0|
++------+------+-----------------+-------+
+</code></pre>
+<h3 id="dataset-oprations-strong-typed-数据集操作-强类型">Dataset Oprations (Strong typed) 数据集操作-强类型</h3>
+<p>由于强类型操作都是基于类型操作，Spark SQL的操作都是推荐使用Dataframe基于列操作，因此一般情况下不推荐使用。</p>
+<pre><code class="language-java">val lines = Array(&quot;this is a demo&quot;, &quot;hello spark&quot;)
+val wordRDD = spark.sparkContext.makeRDD(lines)
+	.flatMap(_.split(&quot;\\s+&quot;))
+	.map((_, 1))
+	
+import org.apache.spark.sql.expressions.scalalang.typed
+
+val ds: Dataset[(String, Int)] = wordRDD.toDS()
+ds.groupByKey(t =&gt; t._1)
+	.agg(typed.sum[(String, Int)](tuple =&gt; tuple._2).name(&quot;total&quot;))
+	.filter(tuple =&gt; tuple._1.contains(&quot;o&quot;))
+	.show()
+</code></pre>
+<pre><code>+-----+-----+
+|value|total|
++-----+-----+
+|hello|  1.0|
+| demo|  1.0|
++-----+-----+
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/aAuqPKSPG/" class="tag">
+                    Spark
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/spark04/">
+                  <h3 class="post-title">
+                    Spark入门(五)——Spark Streaming
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>SpringCloud之熔断器-Hystrix | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="Hystrix是一个延迟和容错库，旨在隔离对远程系统，服务和第三方库的访问点，停止级联故障，并在复杂的分布式系统中实现弹性，在这些系统中，故障是不可避免的。
+
+依赖
+&lt;dependency&gt;
+	&lt;groupId&gt;or..." />
+    <meta name="keywords" content="SpringCloud,微服务" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">SpringCloud之熔断器-Hystrix</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>Hystrix是一个延迟和容错库，旨在隔离对远程系统，服务和第三方库的访问点，停止级联故障，并在复杂的分布式系统中实现弹性，在这些系统中，故障是不可避免的。<br>
+<img src="https://img-blog.csdnimg.cn/20200213161905569.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></p>
+<h2 id="依赖">依赖</h2>
+<pre><code class="language-xml">&lt;dependency&gt;
+	&lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+	&lt;artifactId&gt;spring-cloud-starter-netflix-hystrix&lt;/artifactId&gt;
+&lt;/dependency&gt;
+</code></pre>
+<p>SpringBootApplication入口中需要添加<code>@EnableCircuitBreaker</code>注解，此时Spring工厂会启动AOP方式对所有的方法上有<code>@HystrixCommand</code>的业务方法添加熔断策略。</p>
+<pre><code class="language-java">@SpringBootApplication
+@EnableCircuitBreaker
+public class HystrixSpringBootApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(HystrixSpringBootApplication.class,args);
+    }
+}
+</code></pre>
+<p>在业务方法上添加<code>@HystrixCommand</code>注解实现熔断。</p>
+<pre><code class="language-java">@HystrixCommand
+@Override
+public User queryUserById(Integer id) {
+    System.out.println(Thread.currentThread().getId());
+    return new User(&quot;未熔断&quot;, new Date(), true, 11.11);
+}
+</code></pre>
+<h2 id="线程隔离">线程隔离</h2>
+<p>默认该方法的执行会启动新的线程执行和主程序不在一个线程中，因此如果上下文中存在ThreadLocal变量，在该方法中就失效了。因此一般可以通过设置commandProperties注解属性，设置线程就可以了。</p>
+<ul>
+<li>默认情况Service和Controller线程ID<br>
+<img src="https://img-blog.csdnimg.cn/20200213165302950.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></li>
+</ul>
+<pre><code class="language-java">@HystrixCommand(commandProperties = {
+            @HystrixProperty(name = &quot;execution.isolation.strategy&quot;,value = &quot;SEMAPHORE&quot;)
+    })
+@Override
+public User queryUserById(Integer id) {
+	System.out.println(&quot;Service线程ID:&quot; + Thread.currentThread().getId());
+    return new User(&quot;未熔断&quot;, new Date(), true, 11.11);
+}
+</code></pre>
+<ul>
+<li>设置后Service和Controller线程ID<br>
+<img src="https://img-blog.csdnimg.cn/20200213165644697.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></li>
+</ul>
+<blockquote>
+<p><code>execution.isolation.strategy</code>该属性的可选值有两个<code>THREAD</code>和<code>SEMAPHORE</code>默认值是<code>THREAD</code>。①一般如果一个实例一秒钟有100个并发，此时因为频繁启动线程的开销过大此时一般考虑使用SEMAPHORE，②非网络调用。</p>
+</blockquote>
+<h2 id="fallback">Fallback</h2>
+<p>过在<code>@HystrixCommand中声明fallbackMethod</code>的名称可以实现优雅降级，如下所示：</p>
+<pre><code class="language-java">@HystrixCommand(fallbackMethod = &quot;fallbackMethodQueryUserById&quot;)
+@Override
+public User queryUserById(Integer id) {
+    System.out.println(Thread.currentThread().getId());
+    int i=10/0;
+    return new User(&quot;未熔断&quot;, new Date(), true, 11.11);
+}
+public User fallbackMethodQueryUserById(Integer id, Throwable e) {
+    System.out.println(e.getMessage());
+    return new User(&quot;熔断降级后&quot;, new Date(), true, 11.11);
+}
+</code></pre>
+<p>调用结果：<br>
+<img src="https://img-blog.csdnimg.cn/20200213170232834.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></p>
+<blockquote>
+<p>注意要求fallbackMethod方法和目标方法必须在同一个类中，具有相同的参数（异常参数可选）</p>
+</blockquote>
+<h2 id="error-propagation">Error Propagation</h2>
+<p>根据此描述，<code>@ HystrixCommand</code>能够指定应忽略的异常类型。如下所述<code>ArithmeticException: / by zero</code>将不会触发fallbackMethod方法。</p>
+<pre><code class="language-java">//	@HystrixCommand(fallbackMethod = &quot;fallbackMethodQueryUserById&quot;)
+//	@HystrixCommand(commandProperties = {
+//			@HystrixProperty(name = &quot;execution.isolation.strategy&quot;, value = &quot;SEMAPHORE&quot;)
+//	})
+	@HystrixCommand(fallbackMethod = &quot;fallbackMethodQueryUserById&quot;,ignoreExceptions = {ArithmeticException.class})
+	@Override
+	public User getUser(Integer id) {
+		System.out.println(&quot;Service线程ID:&quot; + Thread.currentThread().getId());
+		int i = 10 / 0;
+		return new User(&quot;未熔断&quot;, new Date(), true, 11.11);
+	}
+
+	public User fallbackMethodQueryUserById(Integer id, Throwable e) {
+		System.out.println(e.getMessage());
+		return new User(&quot;熔断降级后&quot;, new Date(), true, 11.11);
+	}
+</code></pre>
+<h2 id="请求超时熔断">请求超时熔断</h2>
+<p>用户可以通过设置<code>execution.isolation.thread.timeoutInMilliseconds</code>属性设置一个方法最大请求延迟，系统会抛出<code>HystrixTimeoutException</code></p>
+<pre><code class="language-java">@HystrixCommand(fallbackMethod = &quot;fallbackMethodQueryUserById&quot;,commandProperties = {
+			@HystrixProperty(name=&quot;execution.isolation.thread.timeoutInMilliseconds&quot;,value=&quot;100&quot;)
+	})
+	@Override
+	public User getUser(Integer id) {
+		System.out.println(&quot;Service线程ID:&quot; + Thread.currentThread().getId());
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+//		int i = 10 / 0;
+		return new User(&quot;未熔断&quot;, new Date(), true, 11.11);
+	}
+
+	public User fallbackMethodQueryUserById(Integer id, Throwable e) {
+		System.out.println(e.getMessage());
+		return new User(&quot;超时熔断&quot;, new Date(), true, 11.11);
+	}
+</code></pre>
+<p>执行结果：<br>
+<img src="https://img-blog.csdnimg.cn/20200213171122722.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></p>
+<blockquote>
+<p><a href="https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-javanica">https://github.com/Netflix/Hystrix/tree/master/hystrix-contrib/hystrix-javanica</a><br>
+<a href="https://github.com/Netflix/Hystrix/wiki/Configuration">https://github.com/Netflix/Hystrix/wiki/Configuration</a></p>
+</blockquote>
+<h2 id="hystrix-dashboard">Hystrix Dashboard</h2>
+<h3 id="依赖-2">依赖</h3>
+<pre><code class="language-xml"> &lt;dependency&gt;
+        &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+        &lt;artifactId&gt;spring-cloud-starter-netflix-hystrix-dashboard&lt;/artifactId&gt;
+ &lt;/dependency&gt;
+</code></pre>
+<blockquote>
+<p>SpringBoot入口类添加<code>@EnableHystrixDashboard</code>注解<br>
+访问页面http://localhost:端口/hystrix</p>
+</blockquote>
+<figure data-type="image" tabindex="1"><img src="https://img-blog.csdnimg.cn/20200213172042298.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></figure>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/uyhs3Xoe6/" class="tag">
+                    SpringCloud
+                  </a>
+                
+                  <a href="https://mask0407.github.io/rg_9e-j4YM/" class="tag">
+                    微服务
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/springcloud01/">
+                  <h3 class="post-title">
+                    SpringCloud之注册中心-Nacos
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Thread.sleep(0)到底是个什么骚操作？ | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="今天看到一段有意思的代码：Thread.sleep(0)，下面就来分析一下这串看似无用的代码到底有没有用。
+
+Thread.sleep(0)到底是个什么骚操作，这睡0毫秒和不睡有什么区别吗？
+
+操作系统资源的分配策略
+想要去了解多线程，就先..." />
+    <meta name="keywords" content="java,线程" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Thread.sleep(0)到底是个什么骚操作？</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p>今天看到一段有意思的代码：<code>Thread.sleep(0)</code>，下面就来分析一下这串看似无用的代码到底有没有用。</p>
+<blockquote>
+<p>Thread.sleep(0)到底是个什么骚操作，这睡0毫秒和不睡有什么区别吗？</p>
+</blockquote>
+<h2 id="操作系统资源的分配策略">操作系统资源的分配策略</h2>
+<p>想要去了解多线程，就先要去了解操作系统中资源的不同分配策略<br>
+在操作系统中，CPU资源的分配策略有多种，下面就拿两种最为典型的策略举例：</p>
+<h3 id="时间片算法">时间片算法</h3>
+<p>基于时间片算法分配资源的代表就是Unix系统。在时间片算法中，操作系统会维护一个<code>队列</code>，将所有的进程放入队列中。然后操作系统会按照队列中的进程顺序为他们分配属于自己的运行时间，也就是说，操作系统给A进程分配n毫秒时间，那么A进程在本次排队时只可以运行n毫秒。当A进程运行完n毫秒后，操作系统不管A是否运行完毕都会把运行权限<code>强行剥夺</code>，交给队列里面的<code>下一个进程</code>去执行，然后<code>A进程继续去队列尾部进行下一次排队</code>。(这里，如果A在n毫秒之前提前结束或者被阻塞，操作系统会立即收回A的运行权限)</p>
+<p>举个例子：</p>
+<blockquote>
+<p>你去食堂买饭，这种模式就是食堂会强制你去排队，而且没人只有十分钟点餐时间，一旦过了这个时间你就要重新去排队。</p>
+</blockquote>
+<h3 id="抢占式">抢占式</h3>
+<p>基于抢占式分配资源的代表是Winodws系统。抢占式的操作系统都是“儒家学派”的，默认每个进程都是“君子”。意思就是：一个进程一旦拿到CPU后，除非它主动放弃CPU权限，不然别的进程是拿不到CPU权限的。然后操作系统在选取执行权限的时候也不是随机选的，它会根据优先级和饥饿时间来判定谁更需要CPU权限的。每次一个进程是释放CPU后，就会进行一次优先级评定。也就是说，如果运气好，每次都会被选中。</p>
+<p>举个例子：</p>
+<blockquote>
+<p>你去食堂买饭，食堂阿姨看你小伙子挺帅就先给你盛饭。然后给你盛完饭再选一次，又发现你这小伙子越看越顺眼，就再给你一碗。</p>
+</blockquote>
+<h2 id="关于sleep">关于Sleep</h2>
+<p>拿抢占式来说。去食堂吃饭，阿姨看小伙子挺不错，三番五次的给你盛饭，但是你已经吃饱了，这时候你就会告诉阿姨我吃饱了，接下来半小时不要再给我盛饭了。对应到代码里就是，A最近30min不想再参与资源选举了，这时它就会<code>sleep(30 * 60 * 1000)</code>，然后操作系统就会进行再次选举，并且未来半小时A不参与选举。此时当A醒来之后，或许CPU执行权在另一个进程手里。</p>
+<h3 id="再说threadsleep0">再说<code>Thread.sleep(0)</code></h3>
+<p>假如A执行了一段时间后，突然想起来其他小伙伴可能也需要CPU执行权限，不能光自己一个人霸占这个CPU，但是又没办法主动申请再次选举，就只能退而求其次执行Thread.sleep(0)，在A有执行权限的情况下执行，执行后告诉操作系统，我要休息0毫秒，你接下来0毫秒内的选举就不要选我啦。但是操作系统下次再选举的时候还是会把A算进去，因为0毫秒已经过了。</p>
+<h3 id="总结">总结</h3>
+<blockquote>
+<p><code>Thread.sleep(0)</code>不光有用，而且有奇效，对于想做老好人的进程可以调用一次，让操作系统再次进行选举。</p>
+</blockquote>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/rmtSLWko1/" class="tag">
+                    java
+                  </a>
+                
+                  <a href="https://mask0407.github.io/vIyAknLKTN/" class="tag">
+                    线程
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/redis00/">
+                  <h3 class="post-title">
+                    Redis新版本发布，Redis还是单线程？
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

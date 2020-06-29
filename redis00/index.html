@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Redis新版本发布，Redis还是单线程？ | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+Redis简介
+Redis单线程时代
+
+“单线程”的Redis为什么会这么快？
+
+
+Redis的瓶颈
+6.0版本后的Redis线程问题
+
+redis的多线程不是你理解的多线程
+redis的多线程是默认关闭的
+
+
+
+
+
+(Redis从单..." />
+    <meta name="keywords" content="NoSql,Redis" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Redis新版本发布，Redis还是单线程？</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#redis%E7%AE%80%E4%BB%8B">Redis简介</a></li>
+<li><a href="#redis%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%97%B6%E4%BB%A3">Redis单线程时代</a>
+<ul>
+<li><a href="#%E5%8D%95%E7%BA%BF%E7%A8%8B%E7%9A%84redis%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E8%BF%99%E4%B9%88%E5%BF%AB"><code>“单线程”</code>的Redis为什么会这么快？</a></li>
+</ul>
+</li>
+<li><a href="#redis%E7%9A%84%E7%93%B6%E9%A2%88">Redis的瓶颈</a></li>
+<li><a href="#60%E7%89%88%E6%9C%AC%E5%90%8E%E7%9A%84redis%E7%BA%BF%E7%A8%8B%E9%97%AE%E9%A2%98">6.0版本后的Redis线程问题</a>
+<ul>
+<li><a href="#redis%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%E4%B8%8D%E6%98%AF%E4%BD%A0%E7%90%86%E8%A7%A3%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B">redis的多线程不是你理解的多线程</a></li>
+<li><a href="#redis%E7%9A%84%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%98%AF%E9%BB%98%E8%AE%A4%E5%85%B3%E9%97%AD%E7%9A%84">redis的多线程是默认关闭的</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+(Redis从单线程到多线程的转变)</p>
+<h2 id="redis简介">Redis简介</h2>
+<blockquote>
+<p><strong>Redis 是一个开源（BSD许可）的，内存中的数据结构存储系统，它可以用作数据库、缓存和消息中间件。 它支持多种类型的数据结构，如 字符串（strings）， 散列（hashes）， 列表（lists）， 集合（sets）， 有序集合（sorted sets） 与范围查询， bitmaps， hyperloglogs 和 地理空间（geospatial） 索引半径查询。 Redis 内置了 复制（replication），LUA脚本（Lua scripting）， LRU驱动事件（LRU eviction），事务（transactions） 和不同级别的 磁盘持久化（persistence）， 并通过 Redis哨兵（Sentinel）和自动 分区（Cluster）提供高可用性（high availability）。</strong></p>
+</blockquote>
+<h2 id="redis单线程时代">Redis单线程时代</h2>
+<ul>
+<li>Redis在起初严格意义上也不算纯粹的单线程</li>
+</ul>
+<blockquote>
+<p>单线程指的是网络请求模块使用了一个线程（所以不需考虑并发安全性），即一个线程处理所有网络请求，其他模块仍用了多个线程。比如持久化时，Redis就会开启一个子线程去操作。</p>
+</blockquote>
+<h3 id="单线程的redis为什么会这么快"><code>“单线程”</code>的Redis为什么会这么快？</h3>
+<p>Redis被广泛应用于缓存，一切皆源于Redis基于内存计算，它的读取速度要比寻常的RMDB(关系型数据库)快上很多。</p>
+<blockquote>
+<ul>
+<li>Redis每秒可执行大约110000次的设置(SET)操作，每秒大约可执行81000次的读取/获取(GET)操作。</li>
+<li>Redis操作具有原子性，能保证并发情况下数据的安全性。</li>
+<li>Rdis采用请求上的<code>单线程</code>，避免了不必要的上下文切换和线程间的资源竞争。</li>
+<li>Redis采用了如非阻塞IO模型、IO的多路复用等多种IO模型。</li>
+</ul>
+</blockquote>
+<h2 id="redis的瓶颈">Redis的瓶颈</h2>
+<p>先来看Redis的特性，Redis是基于内存进行操作的NoSql数据库。</p>
+<blockquote>
+<ul>
+<li>首先<code>CPU</code>不会成为Redis的瓶颈，这也是为什么单线程的Redis依然恐怖如斯的写照</li>
+<li>Redis多用于高并发下做缓存，所以Redis的瓶颈最有可能是机器<code>内存</code>的大小或者<code>网络带宽</code></li>
+</ul>
+</blockquote>
+<h2 id="60版本后的redis线程问题">6.0版本后的Redis线程问题</h2>
+<p>Redis的作者在 2019-12-19 发布了Redis 6.0 RC1，但是即便是这种大佬也没有逃过“真香定律”，Redis居然开始走上了多线程的潮流路线。也就是说从<code>6.0</code>开始Redis就是<code>多线程</code>的了，这也就意味着以后面试又多一个坑！</p>
+<p>作者在自己博客中对新特性的介绍<br>
+<img src="https://img-blog.csdnimg.cn/20200513103522584.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="加粗标红" loading="lazy">原文地址：<a href="http://antirez.com/news/131">Redis 6.0 RC1 作者博客原文</a></p>
+<p>Redis 6 被称为是 Redis 有史以来最大的一个版本，就在2020年五一期间，6.0稳定版本发布了。下面单就线程方面先了解一下新版本特性：</p>
+<h3 id="redis的多线程不是你理解的多线程">redis的多线程不是你理解的多线程</h3>
+<blockquote>
+<ol>
+<li>但跟 Memcached 这种从 IO 处理到数据访问多线程的实现模式有些差异。Redis 的多线程部分只是用来处理网络数据的读写和协议解析，执行命令仍然是单线程。之所以这么设计是不想因为多线程而变得复杂，需要去控制 key、lua（一种轻量级脚本语言）、事务，LPUSH/LPOP（redis语法：将一个或多个值插入到列表头部（左边）、移出并获取列表的第一个元素(左边)） 等等的并发问题</li>
+<li>主线程负责接收连接请求，读事件到来(收到请求)则放到一个全局等待读处理队列</li>
+<li>主线程处理完读事件之后，通过 RR(Round Robin) 将这些连接分配给这些 IO 线程，然后主线程忙等待(spinlock 的效果)状态</li>
+<li>IO 线程将请求数据读取并解析完成(这里只是读数据和解析并不执行)</li>
+<li>主线程执行所有命令并清空整个请求等待读处理队列(执行部分串行)</li>
+</ol>
+</blockquote>
+<h3 id="redis的多线程是默认关闭的">redis的多线程是默认关闭的</h3>
+<blockquote>
+<ol>
+<li>Redis6.0的多线程默认是禁用的，只使用主线程。如需开启需要修改<code>redis.conf</code>配置文件：<code>io-threads-do-reads yes</code></li>
+<li>线程数设置通过修改<code>redis.conf</code>配置文件：<code>io-threads</code>属性指定线程数量。关于线程数的设置，官方有一个建议：4核的机器建议设置为2或3个线程，8核的建议设置为6个线程，线程数一定要小于机器核数。还需要注意的是，线程数并不是越大越好，官方认为超过了8个基本就没什么意义了。</li>
+<li>性能方面，Redis作者在RedisConf 2019的分享中提到，<code>开启多线程后的Redis性能可以提升一倍左右</code>。</li>
+</ol>
+</blockquote>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/NcOh8FcvU/" class="tag">
+                    NoSql
+                  </a>
+                
+                  <a href="https://mask0407.github.io/b_rV1mTAIK/" class="tag">
+                    Redis
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/docker00/">
+                  <h3 class="post-title">
+                    使用Docker搭建Greenplum
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

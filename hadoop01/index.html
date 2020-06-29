@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Hadoop 基础分布式集群搭建及使用 | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593410445912">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+环境：以CentOS6.5为例
+
+准备
+配置文件修改
+配置Hadoop环境变量
+NameNode格式化
+启动|停止hadoop【在NameNode节点运行】
+shell访问HDFS
+浏览器访问HDFC
+
+
+
+(HDFS分布式集群搭建【基础..." />
+    <meta name="keywords" content="Hadoop,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593410445912" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Hadoop 基础分布式集群搭建及使用</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li><a href="#%E7%8E%AF%E5%A2%83%E4%BB%A5centos65%E4%B8%BA%E4%BE%8B">环境：以CentOS6.5为例</a>
+<ul>
+<li><a href="#%E5%87%86%E5%A4%87">准备</a></li>
+<li><a href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BF%AE%E6%94%B9">配置文件修改</a></li>
+<li><a href="#%E9%85%8D%E7%BD%AEhadoop%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F">配置Hadoop环境变量</a></li>
+<li><a href="#namenode%E6%A0%BC%E5%BC%8F%E5%8C%96">NameNode格式化</a></li>
+<li><a href="#%E5%90%AF%E5%8A%A8%E5%81%9C%E6%AD%A2hadoop%E5%9C%A8namenode%E8%8A%82%E7%82%B9%E8%BF%90%E8%A1%8C">启动|停止hadoop【在NameNode节点运行】</a></li>
+<li><a href="#shell%E8%AE%BF%E9%97%AEhdfs">shell访问HDFS</a></li>
+<li><a href="#%E6%B5%8F%E8%A7%88%E5%99%A8%E8%AE%BF%E9%97%AEhdfc">浏览器访问HDFC</a></li>
+</ul>
+</li>
+</ul>
+(HDFS分布式集群搭建【基础版】)</p>
+<h1 id="环境以centos65为例">环境：以CentOS6.5为例</h1>
+<ul>
+<li>防火墙关闭并关闭自启</li>
+<li>selinux设置关闭</li>
+<li>设置主机名</li>
+<li>设置主机映射 jdk1.7</li>
+<li>ssh免密登陆</li>
+<li>hadoop-2.5.2</li>
+</ul>
+<h2 id="准备">准备</h2>
+<p>解压hadoop，并在hadoop根目录下创建 <strong>data/tmp</strong>目录</p>
+<h2 id="配置文件修改">配置文件修改</h2>
+<p>配置文件位置：hadoop目录下的etc/hadoop<br>
+<strong>hadoop-env.sh</strong></p>
+<pre><code class="language-xml">    export JAVA_HOME=/usr/java/jdk1.7.0_71    #jdk路径
+</code></pre>
+<p><strong>core-site.xml</strong></p>
+<pre><code class="language-xml"> &lt;!--  用于设置namenode并且作为Java程序的访问入口  --&gt;
+ &lt;!--  hadoop1.msk.com 为主机名  --&gt;
+        &lt;property&gt;		
+             &lt;name&gt;fs.defaultFS&lt;/name&gt;
+             &lt;value&gt;hdfs://hadoop1.msk.com:8020&lt;/value&gt;
+        &lt;/property&gt;
+       &lt;!--  存储NameNode持久化的数据，DataNode块数据  --&gt;
+       &lt;!--  手工创建$HADOOP_HOME/data/tmp  --&gt;
+        &lt;property&gt;
+	         &lt;name&gt;hadoop.tmp.dir&lt;/name&gt;
+	         &lt;value&gt;/opt/install/hadoop-2.5.2/data/tmp&lt;/value&gt;
+         &lt;/property&gt;
+</code></pre>
+<p><strong>hdfs-site.xml</strong></p>
+<pre><code class="language-xml"> &lt;!--  设置副本数量 默认是3 可自行根据需求更改  --&gt;
+        &lt;property&gt;		
+            &lt;name&gt;dfs.replication&lt;/name&gt;
+            &lt;value&gt;3&lt;/value&gt;
+        &lt;/property&gt;
+&lt;!--  权限，可省略  --&gt;
+         &lt;property&gt;
+             &lt;name&gt;dfs.permissions.enabled&lt;/name&gt;
+             &lt;value&gt;false&lt;/value&gt;
+          &lt;/property&gt;
+          &lt;property&gt;
+              &lt;name&gt;dfs.namenode.http.address&lt;/name&gt;
+              &lt;value&gt;hadoop1.mask.com:50070&lt;/value&gt;
+           &lt;/property&gt;
+</code></pre>
+<p><strong>mapred-site.xml</strong></p>
+<pre><code class="language-xml">&lt;!--  yarn 与 MapReduce相关  --&gt;
+       &lt;property&gt;	 	        		
+            &lt;name&gt;mapreduce.framework.name&lt;/name&gt;
+            &lt;value&gt;yarn&lt;/value&gt;
+       &lt;/property&gt;
+</code></pre>
+<p><strong>yarn-site.xml</strong></p>
+<pre><code class="language-xml"> &lt;property&gt;
+          &lt;name&gt;yarn.nodemanager.aux-services&lt;/name&gt;
+          &lt;value&gt;mapreduce_shuffle&lt;/value&gt;
+  &lt;/property&gt;
+</code></pre>
+<p><strong>slaves</strong><br>
+这里配置DataNode的主机名 机器有限，这里节点1即为NameNode也为DataNode</p>
+<pre><code class="language-xml">hadoop1.msk.com
+</code></pre>
+<h2 id="配置hadoop环境变量">配置Hadoop环境变量</h2>
+<p>在环境变量文件/etc/profile加入</p>
+<pre><code class="language-shell">export HADOOP_HOME=(你的Hadoop安装路径)
+export path=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
+</code></pre>
+<h2 id="namenode格式化">NameNode格式化</h2>
+<p>目的作用：格式化hdfs系统，并且生成存储数据块的目录</p>
+<pre><code>   hadoop namenode -format 
+</code></pre>
+<h2 id="启动停止hadoop在namenode节点运行">启动|停止hadoop【在NameNode节点运行】</h2>
+<pre><code>   sbin/start-all.sh
+   sbin/stop-all.sh
+</code></pre>
+<p>想检验是否启动成功可用jps命令查看进程</p>
+<h2 id="shell访问hdfs">shell访问HDFS</h2>
+<ol>
+<li>查看目录结构</li>
+</ol>
+<pre><code>	hadoop fs -ls 路径
+</code></pre>
+<ol start="2">
+<li>创建文件夹</li>
+</ol>
+<pre><code>    hadoop fs -mkdir /a
+    hadoop fs -mkdir -p /a/b
+</code></pre>
+<ol start="3">
+<li>本地上传文件到hdfs中</li>
+</ol>
+<pre><code>    hadoop fs -put local_path hdfs_path
+</code></pre>
+<ol start="4">
+<li>查看文件内容</li>
+</ol>
+<pre><code>   hadoop fs dfs -text /a/c
+   hadoop fs dfs -cat /a/c
+</code></pre>
+<ol start="5">
+<li>删除</li>
+</ol>
+<pre><code>    hadoop fs dfs -rm /a/c
+</code></pre>
+<ol start="6">
+<li>删除非空文件夹</li>
+</ol>
+<pre><code>    hadoop fs dfs -rmr /a
+</code></pre>
+<ol start="7">
+<li>从hdfs下载文件到本地</li>
+</ol>
+<pre><code>    hadoop fs -get hdfs_path local_path
+</code></pre>
+<h2 id="浏览器访问hdfc">浏览器访问HDFC</h2>
+<p>http://hadoop1.msk.com:50070               访问 hdfs<br>
+http://hadoop1.msk.com:8088        访问 yarn</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/mWPQYQko7/" class="tag">
+                    Hadoop
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/hadoop00/">
+                  <h3 class="post-title">
+                    Hadoop 伪分布式搭建(超详细)
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
