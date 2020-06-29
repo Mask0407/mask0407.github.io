@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Spark入门( 八)——Spark流计算新玩法-Structured Streaming | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593400819751">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+简介
+快速入门案例
+
+程序流程结构
+
+
+基本概念
+故障容错
+Structured Streaming API
+
+Input Sources
+
+File Source
+
+Socket source(debug)
+
+
+Kafka source..." />
+    <meta name="keywords" content="Spark,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593400819751" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Spark入门( 八)——Spark流计算新玩法-Structured Streaming</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li><a href="#%E7%AE%80%E4%BB%8B">简介</a></li>
+<li><a href="#%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8%E6%A1%88%E4%BE%8B">快速入门案例</a>
+<ul>
+<li><a href="#%E7%A8%8B%E5%BA%8F%E6%B5%81%E7%A8%8B%E7%BB%93%E6%9E%84">程序流程结构</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5">基本概念</a></li>
+<li><a href="#%E6%95%85%E9%9A%9C%E5%AE%B9%E9%94%99">故障容错</a></li>
+<li><a href="#structured-streaming-api">Structured Streaming API</a>
+<ul>
+<li><a href="#input-sources">Input Sources</a>
+<ul>
+<li><a href="#file-source">File Source</a>
+<ul>
+<li><a href="#socket-sourcedebug">Socket source(debug)</a></li>
+</ul>
+</li>
+<li><a href="#kafka-source">Kafka source</a></li>
+</ul>
+</li>
+<li><a href="#output-sink">Output Sink</a>
+<ul>
+<li><a href="#file-sinkappend-mode-only">File sink(Append Mode Only)</a></li>
+<li><a href="#kafkasinkappendupdatecomplete">KafkaSink((Append|Update|Complete))</a></li>
+<li><a href="#foreach-sinkappendupdatecomplate">Foreach sink(Append|Update|Complate)</a>
+<ul>
+<li><a href="#userrowwriter">UserRowWriter</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#window-on-event-time">Window on Event Time</a></li>
+<li><a href="#%E5%A4%84%E7%90%86%E5%BB%B6%E8%BF%9F-data-%E5%92%8C-watermarking">处理延迟 Data 和 Watermarking</a>
+<ul>
+<li><a href="#watermarking%E4%BF%9D%E9%9A%9C%E6%9C%BA%E5%88%B6">Watermarking保障机制：</a></li>
+<li><a href="#spark%E6%B8%85%E9%99%A4window%E8%81%9A%E5%90%88%E7%8A%B6%E6%80%81%E6%9D%A1%E4%BB%B6">Spark清除window聚合状态条件</a>
+<ul>
+<li><a href="#update-mode">Update Mode</a></li>
+<li><a href="#append-mode">Append Mode</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#join-%E6%93%8D%E4%BD%9C">Join 操作</a>
+<ul>
+<li><a href="#stream-static-joins">Stream-static Joins</a></li>
+<li><a href="#stream-stream-joins">Stream-stream Joins</a>
+<ul>
+<li><a href="#inner-join">inner join</a></li>
+<li><a href="#outer-join">outer join</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+(Structured Streaming)</p>
+<h1 id="简介">简介</h1>
+<p><code>Structured Streaming</code> 构建在<code>SparkSQL</code>之上的流处理引擎。可以使用户继续使用<code>DataSet/dataFrame</code>操<br>
+作流数据。并且提供了多种计算模型可供选择，默认情况下，使用的依然是Spark的marco batch这种计<br>
+算模型能够到100ms左右的end-to-end的精准一次的容错计算。除此之外也提供了基于<code>EventTime</code>语义<br>
+的窗口计算（DStream 基于Processor Time不同）。同时在spark-2.3版本又提出新的计算模型<br>
+<code>Continuous Processing</code>可以达到1ms左右的精准一次的容错计算。</p>
+<h1 id="快速入门案例">快速入门案例</h1>
+<ul>
+<li>pom</li>
+</ul>
+<pre><code class="language-xml">		&lt;dependency&gt;
+			&lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+			&lt;artifactId&gt;spark-sql_2.11&lt;/artifactId&gt;
+			&lt;version&gt;2.4.3&lt;/version&gt;
+		&lt;/dependency&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+			&lt;artifactId&gt;spark-core_2.11&lt;/artifactId&gt;
+			&lt;version&gt;2.4.3&lt;/version&gt;
+		&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>WordCount</li>
+</ul>
+<pre><code class="language-java">def main(args: Array[String]): Unit = {
+		Logger.getLogger(&quot;org.apache.spark&quot;).setLevel(Level.WARN)
+		Logger.getLogger(&quot;org.apache.jetty.server&quot;).setLevel(Level.OFF)
+
+		//1.构建SparkSession
+		val spark = SparkSession.builder()
+			.appName(&quot;wordcount&quot;)
+			.master(&quot;local[*]&quot;)
+			.getOrCreate()
+		import spark.implicits._
+
+		//2.创建输入流-readStream
+		var lines = spark.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, 9999)
+			.load()
+
+		//3.对dataframe实现转换
+		var wordCounts = lines.as[String]
+    		.flatMap(_.split(&quot;\\s+&quot;))
+    		.groupBy(&quot;value&quot;)
+    		.count()
+
+
+		//4.构建query 输出
+		val query = wordCounts.writeStream
+			.format(&quot;console&quot;)
+			.outputMode(OutputMode.Update()) //有状态持续计算 Complete| Update| Append
+			.start()
+
+		//5.等待流结束
+		query.awaitTermination()
+	}
+</code></pre>
+<ul>
+<li>有状态持续计算 Complete| Update| Append 之间的区别</li>
+</ul>
+<blockquote>
+<ol>
+<li>Complete: 每一个trigger到来时，就输出整个完整的dataframe</li>
+<li>Update: 只输出那些被修改的Row。<br>
+每一次window sliding，就去跟原来的结果比较，有变化就输出</li>
+<li>Append: 只输出新添加的（原来没有的）Row（）（如果是groupby，要有watermark才可以）<br>
+每当一个watermark时间结束了，这个临时的结果再回转换成正式的结果并导出。</li>
+</ol>
+</blockquote>
+<ul>
+<li>nc -l 999 输入</li>
+</ul>
+<pre><code>aa bb cc aa
+cc aa aa aa
+</code></pre>
+<ul>
+<li>输出结果(由于使用了Update 第二次输入没有<code>bb</code>，所有Batch: 2没有bb输出)</li>
+</ul>
+<pre><code>-------------------------------------------
+Batch: 1
+-------------------------------------------
++-----+-----+
+|value|count|
++-----+-----+
+|   cc|    1|
+|   bb|    1|
+|   aa|    2|
++-----+-----+
+
+-------------------------------------------
+Batch: 2
+-------------------------------------------
++-----+-----+
+|value|count|
++-----+-----+
+|   cc|    2|
+|   aa|    5|
++-----+-----+
+</code></pre>
+<h2 id="程序流程结构">程序流程结构</h2>
+<blockquote>
+<p>1.构建<code>SparkSession</code> 对象<br>
+2.借助于<code>SparkSession#readStream</code>加载动态的<code>Dataframe</code><br>
+3.使用<code>DataFrame API</code>或者是SQL语句 实现对动态数据计算<br>
+4.通过<code>DataFrame#writeStream</code>方法构建<code>StreamQuery</code>对象<br>
+5.调用<code>StreamQuery#awaitTermination</code>等待关闭指令</p>
+</blockquote>
+<h1 id="基本概念">基本概念</h1>
+<p>Structure Stream的核心思想是通过将实时数据流看成是一个持续插入table.因此用户就可以使用SQL查 询DynamicTable|UnboundedTable。底层Spark通过StreamQuery实现对数据持续计算。<br>
+<img src="https://img-blog.csdnimg.cn/20200612174115861.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+当对Input执行转换的时候系统产生一张结果表 <code>ResultTable</code> ,当有新的数据产生的时候，系统会往<br>
+<code>Input Table</code> 插入一行数据，这会最终导致系统更新 <code>ResultTable</code> ,每一次的更新系统将更新的数<br>
+据写到外围系统-Sink.<br>
+<img src="https://img-blog.csdnimg.cn/20200612174328732.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></p>
+<ul>
+<li><code>Output</code> 定义如何将Result写出到外围系统，目前Spark支持三种输出模式：(上面已经简单介绍过了)</li>
+</ul>
+<ol>
+<li><code>Complete Mode</code> - 整个ResultTable的数据会被写到外围系统。</li>
+<li><code>Update Mode</code> - 只会将ResultTable中被更新的行，写到外围系统（ spark-2.1.1 +支持）</li>
+<li><code>Append Mode</code> - 只有新数据插入ResultTable的时候，才会将结果输出。注意：这种模式只适用<br>
+于被插入结果表的数据都是只读的情况下，才可以将输出模式定义为Append（查询当中不应该出<br>
+现聚合算子，当然也有特例，例如流中声明watermarker）</li>
+</ol>
+<p>由于Structure Streaming计算的特点，Spark会在内存当中存储程序计算中间状态用于生产结果表的数<br>
+据，Spark并不会存储 Input Table 的数据，一旦处理完成之后，读取的数据会被丢弃。整个聚合的<br>
+过程无需用户干预（对比Storm，Storm状态管理需要将数据写到外围系统）。</p>
+<h1 id="故障容错">故障容错</h1>
+<p>Structured Streaming通过<code>checkpoint</code>和<code>write ahead log</code>去记录每一次批处理的数据源的偏移量（区<br>
+间），可以保证在失败的时候可以重复的读取数据源。其次Structure Streaming也提供了Sink的<code>幂等写</code><br>
+的特性（在编程中一个幂等 操作的特点是其任意多次执行所产生的影响均与一次执行的影响相同），<br>
+因此Structure Streaming实现<code>end-to-end</code> <code>exactly-once</code>语义的故障恢复。</p>
+<h1 id="structured-streaming-api">Structured Streaming API</h1>
+<p>自Spark-2.0版本以后<code>Dataframe/Dataset</code>才可以处理有界数据和无界数据。<code>Structured Streaming</code>也是用<br>
+<code>SparkSession</code>方式去创建<code>Dataset/DataFrame</code> ,同时所有<code>Dataset/DataFrame</code> 的操作保持和<code>Spark SQL</code><br>
+中<code>Dataset/DataFrame</code> 一致。</p>
+<h2 id="input-sources">Input Sources</h2>
+<h3 id="file-source">File Source</h3>
+<p>目前支持支持<code>text</code>, <code>csv</code>, <code>json</code>, <code>orc</code>, <code>parquet</code>等格式的文件，当这些数据被放入到采样目录，系统会以流的<br>
+形式读取采样目录下的文件.</p>
+<pre><code class="language-java">		//1.创建SparkSession
+		val spark = SparkSession
+			.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+		var df = spark.readStream
+			.format(&quot;text&quot;)
+			//json/csv/parquet/orc 等
+			.load(&quot;file:///Users/mashikang/IdeaProjects/structured_stream/src/main/resources&quot;)
+
+		var userDF = df.as[String]
+			.map(line =&gt; line.split(&quot;\\s+&quot;))
+			.map(tokens =&gt; (tokens(0).toInt, tokens(1), tokens(2).toBoolean, tokens(3).toInt))
+			.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;age&quot;)
+
+		val query = userDF.writeStream.format(&quot;console&quot;)
+			.outputMode(OutputMode.Append())
+			.start()
+
+
+		query.awaitTermination()
+</code></pre>
+<ul>
+<li>文件</li>
+</ul>
+<pre><code class="language-text">1 zhangsan true 20
+2 lisi true 28
+3 wangwu false 24
+4 zhaoliu true 28
+</code></pre>
+<h4 id="socket-sourcedebug">Socket source(debug)</h4>
+<pre><code class="language-java">		//1.构建SparkSession
+		val spark = SparkSession.builder()
+			.appName(&quot;wordcount&quot;)
+			.master(&quot;local[*]&quot;)
+			.getOrCreate()
+		import spark.implicits._
+
+		//2.创建输入流-readStream
+		var lines = spark.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, 9999)
+			.load()
+
+		//3.对dataframe实现转换
+		var wordCounts = lines.as[String]
+    		.flatMap(_.split(&quot;\\s+&quot;))
+    		.groupBy(&quot;value&quot;)
+    		.count()
+
+
+		//4.构建query 输出
+		val query = wordCounts.writeStream
+			.format(&quot;console&quot;)
+			.outputMode(OutputMode.Update()) //有状态持续计算 Complete| Update
+			.start()
+
+		//5.等待流结束
+		query.awaitTermination()
+</code></pre>
+<h3 id="kafka-source">Kafka source</h3>
+<ul>
+<li>pom.xml</li>
+</ul>
+<pre><code class="language-xml">&lt;dependency&gt;
+ 	&lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+	&lt;artifactId&gt;spark-sql-kafka-0-10_2.11&lt;/artifactId&gt; 
+	&lt;version&gt;2.4.3&lt;/version&gt; 
+&lt;/dependency&gt;
+</code></pre>
+<pre><code class="language-java">		//1.创建SparkSession
+		val spark=SparkSession .builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+		var df=spark.readStream
+			.format(&quot;kafka&quot;)
+			.option(&quot;kafka.bootstrap.servers&quot;, &quot;localhost:9092&quot;)
+			.option(&quot;subscribe&quot;, &quot;topic01&quot;)
+			.load()
+			.selectExpr(&quot;CAST(key AS STRING)&quot;,&quot;CAST(value AS STRING)&quot;)
+
+		val wordCounts=df.select(&quot;value&quot;).as[String]
+			.flatMap(_.split(&quot;\\s+&quot;))
+			.coalesce(1)
+			.map((_,1))
+			.toDF(&quot;word&quot;,&quot;count&quot;)
+			.groupBy(&quot;word&quot;)
+			.sum(&quot;count&quot;)
+
+		val query = wordCounts.writeStream.
+			format(&quot;console&quot;)
+			.outputMode(OutputMode.Update())
+			.start()
+
+		query.awaitTermination()
+</code></pre>
+<h2 id="output-sink">Output Sink</h2>
+<h3 id="file-sinkappend-mode-only">File sink(Append Mode Only)</h3>
+<pre><code class="language-java">	//1.创建SparkSession
+		val spark = SparkSession.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+		var df = spark.readStream
+			.format(&quot;kafka&quot;)
+			.option(&quot;kafka.bootstrap.servers&quot;, &quot;localhost:9092&quot;)
+			.option(&quot;subscribe&quot;, &quot;topic01&quot;)
+			.load()
+			.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)
+
+		val wordCounts = df.select(&quot;value&quot;).as[String]
+			.flatMap(_.split(&quot;\\s+&quot;))
+			.coalesce(1)
+			.map((_, 1))
+			.toDF(&quot;word&quot;, &quot;count&quot;)
+
+		val query = wordCounts.writeStream
+			.format(&quot;json&quot;)
+			.option(&quot;checkpointLocation&quot;, &quot;file:///Users/mashikang/IdeaProjects/structured_stream/src/main/resources/checkpoints&quot;)
+			.outputMode(OutputMode.Append())
+			.start(&quot;file:////Users/mashikang/IdeaProjects/structured_stream/src/main/resource/json&quot;)
+
+
+		query.awaitTermination()
+</code></pre>
+<h3 id="kafkasinkappendupdatecomplete">KafkaSink((Append|Update|Complete))</h3>
+<pre><code class="language-java">//1.创建SparkSession
+		val spark = SparkSession.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+		import org.apache.spark.sql.functions._
+
+		var df = spark.readStream
+			.format(&quot;kafka&quot;)
+			.option(&quot;kafka.bootstrap.servers&quot;, &quot;localhost:9092&quot;)
+			.option(&quot;subscribe&quot;, &quot;topic01&quot;)
+			.load()
+			.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)
+
+		val wordCounts = df.select(&quot;value&quot;).as[String]
+			.flatMap(_.split(&quot;\\s+&quot;))
+			.coalesce(1)
+			.map((_, 1))
+			.toDF(&quot;word&quot;, &quot;count&quot;)
+			.groupBy(&quot;word&quot;)
+			.agg(sum(&quot;count&quot;) as &quot;count&quot;)
+			.selectExpr(&quot;word&quot;, &quot;CAST(count AS STRING)&quot;)
+			.withColumnRenamed(&quot;word&quot;, &quot;key&quot;)
+			.withColumnRenamed(&quot;count&quot;, &quot;value&quot;)
+
+		val query = wordCounts.writeStream
+			.format(&quot;kafka&quot;)
+			.option(&quot;kafka.bootstrap.servers&quot;, &quot;localhost:9092&quot;)
+			.option(&quot;topic&quot;, &quot;topic02&quot;)
+			.option(&quot;checkpointLocation&quot;, &quot;file:///Users/mashikang/IdeaProjects/structured_stream/src/main/resources/checkpoints&quot;)
+			.outputMode(OutputMode.Update())
+			.start()
+
+		query.awaitTermination()
+</code></pre>
+<h3 id="foreach-sinkappendupdatecomplate">Foreach sink(Append|Update|Complate)</h3>
+<h4 id="userrowwriter">UserRowWriter</h4>
+<p>这里的 open方法在，每一次微批的时候触发，其中 <code>epochId</code>表示计算的批次。一般如果要保证<br>
+<code>exactly-once</code> 语义的处理时候，需要在外围系统存储 <code>epochId</code>，如果存在重复计算 <code>epochId</code> 不<br>
+变。</p>
+<pre><code class="language-java">class UserRowWriter extends ForeachWriter[Row] {
+	// 存储 上一次epochid
+	var lastEpochId: Long = -1L
+
+	/**
+	 * 计算 当前是否处理当前批次，如果epochId=lastEpochId说明是重复记录，丢弃更新 false
+	 * epochId!=lastEpochId 返回true 调用 open
+	 *
+	 * @param partitionId
+	 * @param epochId
+	 * @return
+	 */
+	override def open(partitionId: Long, epochId: Long): Boolean = {
+		var flag: Boolean = false
+		if (epochId != -1L) {
+			if (lastEpochId == epochId) {
+				// 是重复记录
+				flag = false
+			} else {
+				flag = true
+				lastEpochId = epochId
+			}
+		} else {
+			// 第一次进来
+			lastEpochId = epochId
+			flag = true
+		}
+		flag
+	}
+
+	override def process(value: Row): Unit = {
+		println(&quot; ,epochId:&quot; + lastEpochId)
+	}
+
+	override def close(errorOrNull: Throwable): Unit = {
+		if (errorOrNull != null)
+			errorOrNull.printStackTrace()
+	}
+}
+</code></pre>
+<pre><code class="language-java">		//1.创建SparkSession
+		val spark = SparkSession.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+		import org.apache.spark.sql.functions._
+
+		var df = spark.readStream
+			.format(&quot;kafka&quot;)
+			.option(&quot;kafka.bootstrap.servers&quot;, &quot;localhost:9092&quot;)
+			.option(&quot;subscribe&quot;, &quot;topic01&quot;)
+			.load()
+			.selectExpr(&quot;CAST(key AS STRING)&quot;, &quot;CAST(value AS STRING)&quot;)
+
+		val wordCounts = df.select(&quot;value&quot;).as[String]
+			.flatMap(_.split(&quot;\\s+&quot;))
+			.coalesce(1)
+			.map((_, 1))
+			.toDF(&quot;word&quot;, &quot;count&quot;)
+			.groupBy(&quot;word&quot;)
+			.agg(sum(&quot;count&quot;) as &quot;count&quot;)
+			.selectExpr(&quot;word&quot;, &quot;CAST(count AS STRING)&quot;)
+			.withColumnRenamed(&quot;word&quot;, &quot;key&quot;)
+			.withColumnRenamed(&quot;count&quot;, &quot;value&quot;)
+
+		val query = wordCounts.writeStream
+			.outputMode(OutputMode.Update())
+			.foreach(new UserRowWriter)
+			.start()
+
+		query.awaitTermination()
+</code></pre>
+<h2 id="window-on-event-time">Window on Event Time</h2>
+<p>Structured Streaming使用聚合函数基于EventTime计算window是非常简单的类似于分组聚合。分组聚<br>
+合是按照指定的column字段对表中的数据进行分组，然后使用聚合函数对用户指定的column字段进行<br>
+聚合。<br>
+下面一张图描绘的是计算10分钟内的单词统计，每间隔5分钟滑动一个时间窗口。<br>
+<img src="https://img-blog.csdnimg.cn/20200615160910610.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+按照窗口原始含义是将落入到同一个窗口的数据进行分组，因此在Structured Streaming可以使用<br>
+groupby和window表达窗口计算</p>
+<pre><code class="language-java">		Logger.getLogger(&quot;org.apache.spark&quot;).setLevel(Level.WARN)
+		Logger.getLogger(&quot;org.apache.jetty.server&quot;).setLevel(Level.OFF)
+
+		//1.创建SparkSession
+		val spark=SparkSession
+			.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+		//字符,时间戳
+		var df=spark.readStream .format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, &quot;9999&quot;)
+			.load()
+
+		import org.apache.spark.sql.functions._
+		var sdf=new SimpleDateFormat(&quot;mm:ss&quot;)
+
+		val wordCounts=df.select(&quot;value&quot;)
+			.as[String]
+			.map(_.split(&quot;,&quot;))
+			// 这里的Timestamp导如java.sql的依赖
+			.map(tokens=&gt;(tokens(0),new Timestamp(tokens(1).toLong)))
+			.toDF(&quot;word&quot;,&quot;timestamp&quot;)
+			.groupBy(
+				window($&quot;timestamp&quot;,&quot;10 seconds&quot;,&quot;5 seconds&quot;),
+				$&quot;word&quot;
+			)
+			.count()
+			.map(r=&gt;
+				(sdf.format(r.getStruct(0).getTimestamp(0)),
+					sdf.format(r.getStruct(0).getTimestamp(1)),
+					r.getString(1),r.getLong(2)))
+			.toDF(&quot;start&quot;,&quot;end&quot;,&quot;word&quot;,&quot;count&quot;)
+
+		val query = wordCounts.writeStream
+			.outputMode(OutputMode.Update())
+			.format(&quot;console&quot;)
+			.start()
+
+
+		query.awaitTermination()
+</code></pre>
+<h2 id="处理延迟-data-和-watermarking">处理延迟 Data 和 Watermarking</h2>
+<p>默认情况下，Spark会把落入到时间窗口的数据进行聚合操作。但是需要思考的是Event-Time是基于事<br>
+件的时间戳进行窗口聚合的。那就有可能事件窗口已经触发很久了，但是有一些元素因为某种原因，导<br>
+致迟到了，这个时候Spark需要将迟到的的数据加入到已经触发的窗口进行重复计算。但是需要注意如<br>
+果在长时间的流计算过程中，如果不去限定窗口计算的时间，那么意味着Spark要在内存中一直存储窗<br>
+口的状态，这样是不切实际的，因此Spark提供一种称为<code>watermarker</code>的机制用于限定存储在Spark内存<br>
+中中间结果存储的时间，这样系统就可以将已经确定触发过的窗口的中间结果给删除。如果后续还有数<br>
+据在窗口endtime以后抵达该窗口，Spark把这种数据定义为<code>late数据</code>。其中<code>watermarker</code>计算方式 <code>max event time seen by engine - late threshold</code>如果<code>watermarker</code>的取值大于了时间窗口的<br>
+endtime即可认定该窗口的计算结果就可以被丢弃了。如果此时再有数据落入到已经被丢弃的时间窗<br>
+口，则该迟到的数据会被Spark放弃更新，也就是丢弃。</p>
+<blockquote>
+<p>Watermarking=<code>max event time seen by engine - late threshold</code></p>
+</blockquote>
+<h3 id="watermarking保障机制">Watermarking保障机制：</h3>
+<ul>
+<li>能够保证在window的EndTime &gt; 水位线的窗口的状态Spark会存储起来，这个时候如果有迟到的<br>
+数据再水位线没有淹没window之前Spark可以保障迟到的数据能正常的处理。</li>
+<li>如果水位线已经没过了窗口的end时间，那么后续迟到数据不一定能够被处理，换句话说，迟到越<br>
+久的数据 被处理的几率越小。</li>
+</ul>
+<blockquote>
+<p>如果是使用<code>水位线计算</code> ，输出模式必须是Update或者Append,否则系统不会删除。</p>
+</blockquote>
+<pre><code class="language-java">		Logger.getLogger(&quot;org.apache.spark&quot;).setLevel(Level.WARN)
+		Logger.getLogger(&quot;org.apache.jetty.server&quot;).setLevel(Level.OFF)
+
+		//1.创建SparkSession
+		val spark=SparkSession
+			.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+		//字符,时间戳
+		var df=spark.readStream .format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, &quot;9999&quot;)
+			.load()
+
+		import org.apache.spark.sql.functions._
+		var sdf=new SimpleDateFormat(&quot;mm:ss&quot;)
+
+		val wordCounts=df.select(&quot;value&quot;)
+			.as[String]
+			.map(_.split(&quot;,&quot;))
+			// 这里的Timestamp导如java.sql的依赖
+			.map(tokens=&gt;(tokens(0),new Timestamp(tokens(1).toLong)))
+			.toDF(&quot;word&quot;,&quot;timestamp&quot;)
+			// 与上面窗口的API相比，多了水位线的设置
+			.withWatermark(&quot;timestamp&quot;, &quot;5 seconds&quot;)
+			.groupBy(
+				window($&quot;timestamp&quot;,&quot;10 seconds&quot;,&quot;5 seconds&quot;),
+				$&quot;word&quot;
+			)
+			.count()
+			.map(r=&gt;
+				(sdf.format(r.getStruct(0).getTimestamp(0)),
+					sdf.format(r.getStruct(0).getTimestamp(1)),
+					r.getString(1),r.getLong(2)))
+			.toDF(&quot;start&quot;,&quot;end&quot;,&quot;word&quot;,&quot;count&quot;)
+
+		val query = wordCounts.writeStream
+			.outputMode(OutputMode.Update())
+			.format(&quot;console&quot;)
+			.start()
+
+
+		query.awaitTermination()
+</code></pre>
+<h3 id="spark清除window聚合状态条件">Spark清除window聚合状态条件</h3>
+<ul>
+<li>Output mode 必须是 Append 或者 Update.，如果是Update 只要窗口有数据更新即可有输出。<br>
+如果是Append，必须当水位线没过window的时候才会将Result写出。</li>
+</ul>
+<h4 id="update-mode">Update Mode</h4>
+<figure data-type="image" tabindex="1"><img src="https://img-blog.csdnimg.cn/20200615175338128.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></figure>
+<h4 id="append-mode">Append Mode</h4>
+<figure data-type="image" tabindex="2"><img src="https://img-blog.csdnimg.cn/20200615175542447.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></figure>
+<ul>
+<li>必须在分组出现聚合使用时间column/window列</li>
+<li>withWaterMaker的时间column必须和groupBy后面时间column保持一致，例如： 错误实例<code>df.withWatermark(&quot;time&quot;, &quot;1 min&quot;).groupBy(&quot;time2&quot;).count()</code>。</li>
+<li>一定要在分组聚合之前调用withWaterMaking，例如<code>df.groupBy(&quot;time&quot;).count().withWatermark(&quot;time&quot;, &quot;1 min&quot;)</code> 错误实例<br>
+<code>df.withWatermark(&quot;time&quot;, &quot;1 min&quot;).groupBy(&quot;time&quot;).count()</code>正确写法。</li>
+</ul>
+<h2 id="join-操作">Join 操作</h2>
+<p>Structured Streaming 不仅仅支持对静态的 Dataset/DataFrame 做join操作，也支持对streaming<br>
+Dataset/DataFrame实现join操作。</p>
+<ul>
+<li>Stream-static Joins <code>spark-2.0</code> 支持</li>
+<li>Stream-stream Joins <code>Spark 2.3</code> 支持</li>
+</ul>
+<h3 id="stream-static-joins">Stream-static Joins</h3>
+<pre><code class="language-java">		//1.创建SparkSession
+		val spark=SparkSession
+			.builder()
+			.master(&quot;local[6]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+
+		import org.apache.spark.sql.functions._
+
+		/**
+		 * +---+------+---+
+		 * | id| name|age|
+		 * +---+------+---+
+		 * | 1| 张三 | 18|
+		 * | 2| lisi| 28|
+		 * | 3|wangwu| 38|
+		 * +---+------+---+
+		 */
+		val userDF=spark.read
+			.format(&quot;json&quot;)
+			.load(&quot;/Users/mashikang/IdeaProjects/structured_stream/src/main/resources/json&quot;)
+			.selectExpr(&quot;CAST(id AS INTEGER)&quot;,&quot;name&quot;,&quot;CAST(age AS INTEGER)&quot;)
+
+		//1 apple 1 4.5
+		var orderItemDF= spark.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;,&quot;localhost&quot;)
+			.option(&quot;port&quot;,9999)
+			.load() .as[String]
+			.map(line=&gt;line.split(&quot;\\s+&quot;))
+			.map(tokens=&gt;(tokens(0).toInt,tokens(1),tokens(2).toInt,tokens(3).toDouble))
+			.toDF(&quot;uid&quot;,&quot;item&quot;,&quot;count&quot;,&quot;price&quot;)
+
+		val jointResults = orderItemDF.join(userDF,$&quot;id&quot;===$&quot;uid&quot;,&quot;left_outer&quot;)
+
+		val query = jointResults
+			.writeStream
+			.format(&quot;console&quot;)
+			.outputMode(OutputMode.Append())
+			.start()
+
+		query.awaitTermination()
+</code></pre>
+<h3 id="stream-stream-joins">Stream-stream Joins</h3>
+<blockquote>
+<ul>
+<li>两边流都必须声明watermarker，告知引擎什么是可以清楚状态（默认取最低）。</li>
+<li>需要在连接条件中添加eventTime column的时间约束，这样引擎就知道什么时候可以清除后续<br>
+的流的状态。
+<ul>
+<li>Time range join conditions</li>
+<li>Join on event-time windows</li>
+</ul>
+</li>
+</ul>
+</blockquote>
+<h4 id="inner-join">inner join</h4>
+<ul>
+<li><strong>方案1 Time range join conditions</strong></li>
+</ul>
+<pre><code class="language-java">		//1.创建SparkSession
+		val spark = SparkSession
+			.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+
+		//001 apple 1 4.5 1566529410000
+		val orderDF = spark
+			.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, 9999)
+			.load()
+			.map(row =&gt; row.getAs[String](&quot;value&quot;).split(&quot;\\s+&quot;))
+			.map(t =&gt; (t(0), t(1), (t(2).toInt * t(3).toDouble), new Timestamp(t(4).toLong)))
+			.toDF(&quot;uid&quot;, &quot;item&quot;, &quot;cost&quot;, &quot;order_time&quot;)
+
+		//001 zhangsan 1566529410000
+		val userDF = spark
+			.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, 8888)
+			.load()
+			.map(row =&gt; row.getAs[String](&quot;value&quot;).split(&quot;\\s+&quot;))
+			.map(t =&gt; (t(0), t(1), new Timestamp(t(2).toLong)))
+			.toDF(&quot;id&quot;, &quot;name&quot;, &quot;login_time&quot;)
+
+		import org.apache.spark.sql.functions._
+
+		//用户的登陆数据缓存 2 seconds 订单数据缓存4秒
+		val userWatermarker = userDF.withWatermark(&quot;login_time&quot;, &quot;2 seconds&quot;)
+		val orderWaterMarker = orderDF.withWatermark(&quot;order_time&quot;, &quot;4 seconds&quot;)
+
+		//连接 用户登陆以后将2秒以内的购买行为和用进行join 
+		val joinDF = userWatermarker.join(orderWaterMarker,
+			expr(
+				&quot;&quot;&quot;
+				  |id=uid and order_time &gt;= login_time and order_time &lt;= login_time + interval 2 seconds 
+				&quot;&quot;&quot;.stripMargin)
+		)
+		val query = joinDF.writeStream
+			.format(&quot;console&quot;)
+			.outputMode(OutputMode.Append()).start() 
+		
+		query.awaitTermination()
+</code></pre>
+<ul>
+<li><strong>方案2Join on event-time windows</strong></li>
+</ul>
+<pre><code class="language-java">	//1.创建SparkSession
+		val spark = SparkSession
+			.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+
+		//001 apple 1 4.5 1566529410000
+		val orderDF = spark
+			.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, 9999)
+			.load()
+			.map(row =&gt; row.getAs[String](&quot;value&quot;).split(&quot;\\s+&quot;))
+			.map(t =&gt; (t(0), t(1), (t(2).toInt * t(3).toDouble), new Timestamp(t(4).toLong)))
+			.toDF(&quot;uid&quot;, &quot;item&quot;, &quot;cost&quot;, &quot;order_time&quot;)
+
+		//001 zhangsan 1566529410000
+		val userDF = spark
+			.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, 8888)
+			.load()
+			.map(row =&gt; row.getAs[String](&quot;value&quot;).split(&quot;\\s+&quot;))
+			.map(t =&gt; (t(0), t(1), new Timestamp(t(2).toLong)))
+			.toDF(&quot;id&quot;, &quot;name&quot;, &quot;login_time&quot;)
+
+		import org.apache.spark.sql.functions._
+
+		//用户的登陆数据缓存 2 seconds 订单数据缓存4秒
+		val userWatermarker = userDF.withWatermark(&quot;login_time&quot;, &quot;2 seconds&quot;)
+			.select(
+				window($&quot;login_time&quot;, &quot;5 seconds&quot;),
+				$&quot;id&quot;, $&quot;name&quot;, $&quot;login_time&quot;)
+			.withColumnRenamed(&quot;window&quot;, &quot;leftWindow&quot;)
+
+		val orderWaterMarker = orderDF.withWatermark(&quot;order_time&quot;, &quot;4 seconds&quot;)
+			.select(
+				window($&quot;order_time&quot;, &quot;5 seconds&quot;),
+				$&quot;uid&quot;, $&quot;item&quot;, $&quot;cost&quot;, $&quot;order_time&quot;)
+			.withColumnRenamed(&quot;window&quot;, &quot;rightWindow&quot;)
+
+		//连接用户登陆以后将2秒以内的购买行为和用进行join
+		val joinDF = userWatermarker
+			.join(
+				orderWaterMarker,
+				expr(
+					&quot;&quot;&quot;
+					  |id=uid and leftWindow = rightWindow
+					&quot;&quot;&quot;.stripMargin)
+			)
+			
+		val query = joinDF.writeStream
+			.format(&quot;console&quot;)
+			.outputMode(OutputMode.Append()).start() 
+		
+		query.awaitTermination()
+</code></pre>
+<h4 id="outer-join">outer join</h4>
+<pre><code class="language-java">	//1.创建SparkSession
+		val spark = SparkSession
+			.builder()
+			.master(&quot;local[*]&quot;)
+			.appName(&quot;printline&quot;)
+			.getOrCreate()
+
+		import spark.implicits._
+
+		//001 apple 1 4.5 1566529410000
+		val orderDF = spark
+			.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, 9999)
+			.load()
+			.map(row =&gt; row.getAs[String](&quot;value&quot;).split(&quot;\\s+&quot;))
+			.map(t =&gt; (t(0), t(1), (t(2).toInt * t(3).toDouble), new Timestamp(t(4).toLong)))
+			.toDF(&quot;uid&quot;, &quot;item&quot;, &quot;cost&quot;, &quot;order_time&quot;)
+
+		//001 zhangsan 1566529410000
+		val userDF = spark
+			.readStream
+			.format(&quot;socket&quot;)
+			.option(&quot;host&quot;, &quot;localhost&quot;)
+			.option(&quot;port&quot;, 8888)
+			.load()
+			.map(row =&gt; row.getAs[String](&quot;value&quot;).split(&quot;\\s+&quot;))
+			.map(t =&gt; (t(0), t(1), new Timestamp(t(2).toLong)))
+			.toDF(&quot;id&quot;, &quot;name&quot;, &quot;login_time&quot;)
+
+		import org.apache.spark.sql.functions._
+
+		//系统分别会对 user 和 order 缓存 最近 1 seconds 和 2 seconds 数据,
+		// 一旦时间过去，系统就无 法保证数据状态继续保留
+		val loginWatermarker=userDF.withWatermark(&quot;login_time&quot;,&quot;1 second&quot;)
+		val orderWatermarker=orderDF.withWatermark(&quot;order_time&quot;,&quot;2 seconds&quot;)
+
+		//计算订单的时间 &amp; 用户 登陆之后的0~1 seconds 关联 数据 并且进行join
+		val joinDF = loginWatermarker
+		.join(
+				orderWatermarker,
+				expr(&quot;uid=id and order_time &gt;= login_time and order_time &lt;= login_time + interval 1 seconds&quot;),
+				&quot;leftOuter&quot;
+			)
+			
+		val query = joinDF.writeStream
+			.format(&quot;console&quot;)
+			.outputMode(OutputMode.Append()).start() 
+		
+		query.awaitTermination()
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/aAuqPKSPG/" class="tag">
+                    Spark
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/spark06/">
+                  <h3 class="post-title">
+                    Spark入门(七)——最全的Saprk SQL算子介绍与使用(下)
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

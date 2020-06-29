@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Spark入门(五)——Spark Streaming | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593400819751">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+Spark Streaming(流处理)
+
+什么是流处理？
+快速入门
+概念介绍
+
+初始化 StreamingContext
+Discretized Streams (DStreams)
+
+
+InputStream &amp; Rece..." />
+    <meta name="keywords" content="Spark,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593400819751" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Spark入门(五)——Spark Streaming</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#spark-streaming%E6%B5%81%E5%A4%84%E7%90%86">Spark Streaming(流处理)</a>
+<ul>
+<li><a href="#%E4%BB%80%E4%B9%88%E6%98%AF%E6%B5%81%E5%A4%84%E7%90%86">什么是流处理？</a></li>
+<li><a href="#%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8">快速入门</a></li>
+<li><a href="#%E6%A6%82%E5%BF%B5%E4%BB%8B%E7%BB%8D">概念介绍</a>
+<ul>
+<li><a href="#%E5%88%9D%E5%A7%8B%E5%8C%96-streamingcontext">初始化 StreamingContext</a></li>
+<li><a href="#discretized-streams-dstreams">Discretized Streams (DStreams)</a></li>
+</ul>
+</li>
+<li><a href="#inputstream-receivers">InputStream &amp; Receivers</a>
+<ul>
+<li><a href="#basic-sources">Basic Sources</a></li>
+<li><a href="#queue-of-rdds-as-a-stream%E6%B5%8B%E8%AF%95">Queue of RDDs as a Stream(测试)</a></li>
+<li><a href="#advance-source-kafka">Advance Source Kafka</a></li>
+</ul>
+</li>
+<li><a href="#spark-stream-%E7%AE%97%E5%AD%90">Spark Stream 算子</a>
+<ul>
+<li><a href="#updatestatebykey">UpdateStateByKey</a></li>
+</ul>
+</li>
+<li><a href="#%E9%87%8D%E6%95%85%E9%9A%9C%E4%B8%AD%E9%87%8D%E5%90%AF%E4%B8%AD%E7%8A%B6%E6%80%81%E6%81%A2%E5%A4%8D">重故障中|重启中状态恢复</a></li>
+<li><a href="#%E7%AA%97%E5%8F%A3%E5%87%BD%E6%95%B0-window">窗口函数 - window</a></li>
+<li><a href="#output-operations">Output Operations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+(Spark Streaming（流处理）)</p>
+<h2 id="spark-streaming流处理">Spark Streaming(流处理)</h2>
+<h3 id="什么是流处理">什么是流处理？</h3>
+<p>一般流式计算会与批量计算相比较。在流式计算模型中，输入是持续的，可以认为在时间上是无界的，也就意味着，永远拿不到全量数据去做计算。同时，计算结果是持续输出的，也即计算结果在时间上也是无界的。流式计算一般对实时性要求较高，同时一般是先定义目标计算，然后数据到来之后将计算逻辑应用于数据。同时为了提高计算效率，往往尽可能采用增量计算代替全量计算。批量处理模型中，一般先有全量数据集，然后定义计算逻辑，并将计算应用于全量数据。特点是全量计算，并且计算结果一次性全量输出。</p>
+<figure data-type="image" tabindex="1"><img src="https://img-blog.csdnimg.cn/20200527123328230.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="" loading="lazy"></figure>
+<p>Spark Streaming是核心Spark API的扩展，可实现实时数据流的可扩展，高吞吐量，容错流处理。数据可以从许多来源（如Kafka，Flume，Kinesis或TCP套接字）中获取，并且可以使用以高级函数（如map，reduce，join和window）表示的复杂算法进行处理。最后，处理后的数据可以推送到文件系统，数据库和实时dashboards。<br>
+<img src="https://img-blog.csdnimg.cn/20200527123413593.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+在内部，它的工作原理如下。 Spark Streaming接收实时输入数据流并将数据分成批处理，然后由Spark引擎处理以批量生成最终结果流。<br>
+<img src="https://img-blog.csdnimg.cn/20200527123436181.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+Spark Streaming提供称为离散流或DStream的高级抽象，表示连续的数据流。DStream可以从来自Kafka，Flume和Kinesis等源的输入数据流创建，也可以通过在其他DStream上应用高级操作来创建。在内部DStream表示为一系列RDD。</p>
+<blockquote>
+<p>备注:Spark Streaming 因为底层使用批处理模拟流处理，因此在实时性上大打折扣，这就导致了Spark Streaming在流处理领域有者着先天的劣势。虽然Spark Streaming 在实时性上不如一些专业的流处理引擎(Storm/Flink)但是Spark Stream在使用吸取RDD设计经验，提供了比较友好的API算子，使得使用RDD做批处理的程序员可以平滑的过渡到流处理。</p>
+<p>针对于Spark Streaming的微观的批处理问题，目前大数据处理领域又诞生了新秀<code>Flink</code>，该大数据处理引擎，在API易用性上和实时性上都有一定的兼顾，但是与spark最大的差异是Flink底层的处理引擎是流处理引擎，因此Flink天生就是流处理，但是Spark因为底层是批处理，导致了Spark Streaming在实时性上就没法和其他的专业流处理框架对比了。</p>
+</blockquote>
+<h3 id="快速入门">快速入门</h3>
+<ul>
+<li>pom.xml</li>
+</ul>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+    &lt;artifactId&gt;spark-core_2.11&lt;/artifactId&gt;
+    &lt;version&gt;2.4.3&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+    &lt;artifactId&gt;spark-streaming_2.11&lt;/artifactId&gt;
+    &lt;version&gt;2.4.3&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>SparkStreamWordCounts</li>
+</ul>
+<pre><code class="language-java">val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;NetworkWordCount&quot;)
+    val ssc = new StreamingContext(conf, Seconds(5))
+    ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+
+    ssc.socketTextStream(&quot;CentOS&quot;,9999)
+      .flatMap(_.split(&quot; &quot;))
+      .map((_,1))
+      .reduceByKey(_+_)
+      .print()
+
+    ssc.start()
+    ssc.awaitTermination()//等待系统发送指定关闭流计算
+</code></pre>
+<blockquote>
+<p>需要注意：<code>[root@CentOS ~]# yum install -y nc</code>启动nc服务<code>[root@CentOS ~]# nc -lk 9999</code>,注意在调用改程序的时候，需要设置local[n],<code>n&gt;1</code></p>
+</blockquote>
+<h3 id="概念介绍">概念介绍</h3>
+<p>通过上述案例的运行，现在我们来一起探讨一些流处理的概念。在处理流计算的时候，除去spark-core依赖以外我们还需要引入spark-streaming模块。要从Spark Streaming核心API中不存在的Kafka，Flume和Kinesis等源中提取数据，您必须将相应的工件spark-streaming-xxx_2.11添加到依赖项中。xxx例如Kafka</p>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+    &lt;artifactId&gt;spark-streaming-kafka-0-10_2.11&lt;/artifactId&gt;
+    &lt;version&gt;2.4.3&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<h4 id="初始化-streamingcontext">初始化 StreamingContext</h4>
+<p>要初始化Spark Streaming程序，必须创建一个StreamingContext对象，它是所有Spark Streaming功能的主要入口点。</p>
+<pre><code class="language-java">import org.apache.spark._
+import org.apache.spark.streaming._
+
+val conf = new SparkConf().setAppName(appName).setMaster(master)
+val ssc = new StreamingContext(conf, Seconds(1))
+</code></pre>
+<p>appName参数是应用程序在集群UI上显示的名称。 master是Spark，YARN群集URL，或者是在本地模式下运行的特殊<code>local [*]</code>字符串。实际上，在群集上运行时，您不希望在程序中对master进行硬编码，而是使用spark-submit启动指定–master配置。但是，对于本地测试和单元测试，您可以传递<code>local [*]</code>以在进程中运行Spark Streaming（系统会自动检测本地系统的核的数目）。</p>
+<p>请注意ssc会在内部创建一个SparkContext（所有Spark功能的起点），如果需要获取SparkContext对象用户可以调用ssc.sparkContext访问。例如用户使用SparkContext关闭日志。</p>
+<pre><code class="language-java">val conf = new SparkConf()
+	.setMaster(&quot;local[5]&quot;)
+	.setAppName(&quot;wordCount&quot;)
+val ssc = new StreamingContext(conf,Seconds(1))
+//关闭其他日志
+ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)
+</code></pre>
+<p>必须根据应用程序的延迟要求和可用的群集资源设置批处理间隔。要使群集上运行的Spark Streaming应用程序保持稳定，系统应该能够以接收数据的速度处理数据。换句话说，批处理数据应该在生成时尽快处理。通过监视流式Web UI中的处理时间可以找到是否适用于应用程序，其中批处理时间应小于批处理间隔。</p>
+<pre><code class="language-java">val conf = new SparkConf()
+.setMaster(&quot;local[5]&quot;)
+.setAppName(&quot;wordCount&quot;)
+val sc = new SparkContext(conf)
+val ssc = new StreamingContext(sc,Seconds(1))
+</code></pre>
+<p>当用户创建完StreamingContext对象之后，用户需要完成以下步骤</p>
+<blockquote>
+<ul>
+<li>定义数据源，用于创建输入的 DStreams.</li>
+<li>定义流计算算子，通过定义这些算子实现对DStream数据转换和输出</li>
+<li>调用streamingContext.start()启动数据.</li>
+<li>等待计算结束 (人工结束或者是错误) 调用 streamingContext.awaitTermination().</li>
+<li>如果是人工结束，程序应当调用 streamingContext.stop()结束流计算.</li>
+</ul>
+</blockquote>
+<p>重要因素需要谨记</p>
+<ul>
+<li>一旦流计算启动，无法再往计算流程中添加任何计算算子</li>
+<li>一旦SparkContext对象被stop后，无法重启。</li>
+<li>一个JVM系统中只能实例化一个StreamingContext对象。</li>
+<li>SparkContext被stop()后，内部创建的SparkContext也会被stop.如果仅仅是想Stop StreamingContext, 可以设置stop() 中的可选参数 stopSparkContext=false即可.</li>
+</ul>
+<pre><code class="language-java">ssc.stop(stopSparkContext = false)
+</code></pre>
+<ul>
+<li>一个SparkContext 可以重复使用并且创建多个StreamingContexts, 前提是上一个启动的StreamingContext 被停止了(但是并没有关闭 SparkContext对象) 。</li>
+</ul>
+<h4 id="discretized-streams-dstreams">Discretized Streams (DStreams)</h4>
+<p>Discretized Stream或DStream是Spark Streaming提供的基本抽象。它表示连续的数据流，可以是从源接收的输入数据流，也可以是通过转换输入流生成的已处理数据流。在内部，DStream由一系列连续的RDD表示，这是Spark对不可变分布式数据集的抽象。DStream中的每个RDD都包含来自特定时间间隔的数据，如下图所示。<br>
+<img src="https://img-blog.csdnimg.cn/20200527123819156.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+应用于DStream的任何操作都转换为底层RDD上的操作。例如，在先前<code>Quick Start</code>示例中，flatMap操作应用于行DStream中的每个RDD以生成单词DStream的RDD。如下图所示。<br>
+<img src="https://img-blog.csdnimg.cn/20200527123857900.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+这些底层RDD转换由Spark引擎计算。 DStream操作隐藏了大部分细节，并为开发人员提供了更高级别的API以方便使用。</p>
+<h3 id="inputstream-receivers">InputStream &amp; Receivers</h3>
+<p>Input DStream 表示流计算的输入，Spark中默认提供了两类的InputStream：</p>
+<ul>
+<li>Baisc Source ：例如 filesystem、scoket</li>
+<li>Advance Source：例如：Kafka、Flume等外围系统的数据。</li>
+</ul>
+<p>除<code>filesystem</code>以外，其他的Input DStream默认都会占用一个<code>Core</code>(计算资源)，在测试或者生产环境下，分配给计算应用的Core数目必须大于Receivers个数。（本质上除filesystem源以外，其他的输入都是Receiver抽象类的实现。）了例如<code>socketTextStream</code>底层封装了<code>SocketReceiver</code></p>
+<h4 id="basic-sources">Basic Sources</h4>
+<p>因为在<code>快速入门</code>案例中已经使用了socketTextStream，后续我们只测试一下<code>filesystem</code>对于从与HDFS API兼容的任何文件系统（即HDFS，S3，NFS等）上的文件读取数据，可以通过StreamingContext.fileStream [KeyClass，ValueClass，InputFormatClass]创建DStream。文件流不需要运行Receiver，因此不需要为接收文件数据分配任何core。对于简单的文本文件，最简单的方法是<code>StreamingContext.textFileStream（dataDirectory）</code></p>
+<pre><code class="language-java"> val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;FileSystemWordCount&quot;)
+    val ssc = new StreamingContext(conf, Seconds(5))
+    ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+
+    val lines = ssc.textFileStream(&quot;hdfs://CentOS:9000/demo/words&quot;)
+
+    lines.flatMap(_.split(&quot; &quot;))
+      .map((_,1))
+      .reduceByKey(_+_)
+      .print()
+
+    ssc.start()
+    ssc.awaitTermination()
+</code></pre>
+<p>在HDFS上创建目录</p>
+<pre><code class="language-shell">[root@CentOS ~]# hdfs dfs -mkdir -p /demo/words
+[root@CentOS ~]# hdfs dfs -put install.log /demo/words
+</code></pre>
+<h4 id="queue-of-rdds-as-a-stream测试">Queue of RDDs as a Stream(测试)</h4>
+<p>为了使用测试数据测试Spark Streaming应用程序，还可以使用streamingContext.queueStream（queueOfRDDs）基于RDD队列创建DStream。推入队列的每个RDD将被视为DStream中的一批数据，并像流一样处理。</p>
+<pre><code class="language-java">val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;FileSystemWordCount&quot;)
+val ssc = new StreamingContext(conf, Seconds(1))
+ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+
+val queue=new mutable.Queue[RDD[String]]();
+val lines = ssc.queueStream(queue)
+
+lines.flatMap(_.split(&quot; &quot;))
+.map((_,1))
+.reduceByKey(_+_)
+.print()
+
+ssc.start()
+for(i &lt;- 1 to 30){
+    queue += ssc.sparkContext.makeRDD(List(&quot;this is a demo&quot;,&quot;hello how are you&quot;))
+    Thread.sleep(1000)
+}
+ssc.stop()
+</code></pre>
+<h4 id="advance-source-kafka">Advance Source Kafka</h4>
+<ul>
+<li>pom.xml</li>
+</ul>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.spark&lt;/groupId&gt;
+    &lt;artifactId&gt;spark-streaming-kafka-0-10_2.11&lt;/artifactId&gt;
+    &lt;version&gt;2.4.3&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>Kafka对接Spark Streaming</li>
+</ul>
+<pre><code class="language-java">val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;FileSystemWordCount&quot;)
+    val ssc = new StreamingContext(conf, Seconds(1))
+    ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+
+    val kafkaParams = Map[String, Object](
+      &quot;bootstrap.servers&quot; -&gt; &quot;CentOS:9092&quot;,
+      &quot;key.deserializer&quot; -&gt; classOf[StringDeserializer],
+      &quot;value.deserializer&quot; -&gt; classOf[StringDeserializer],
+      &quot;group.id&quot; -&gt; &quot;group1&quot;,
+      &quot;enable.auto.commit&quot; -&gt; (false: java.lang.Boolean)
+    )
+
+    KafkaUtils.createDirectStream(ssc,
+      LocationStrategies.PreferConsistent,//设置加载数据位置策略，
+      Subscribe[String,String](Array(&quot;topic01&quot;),kafkaParams))
+        .map(record =&gt; record.value())
+        .flatMap(_.split(&quot; &quot;))
+        .map((_,1))
+        .reduceByKey(_+_)
+        .print()
+
+    ssc.start()
+    ssc.awaitTermination()
+</code></pre>
+<h3 id="spark-stream-算子">Spark Stream 算子</h3>
+<ul>
+<li><strong>transform</strong>(<em>func</em>)</li>
+</ul>
+<p>该算子可以将DStream的数据转变成RDD，用户操作流数据就像操作RDD感觉是一样的。</p>
+<pre><code class="language-java"> val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;KafkaStreamWordCount&quot;)
+      val ssc = new StreamingContext(conf, Seconds(1))
+      val kafkaParams = Map[String, Object](
+        &quot;bootstrap.servers&quot; -&gt; &quot;CentOS:9092&quot;,
+        &quot;key.deserializer&quot; -&gt; classOf[StringDeserializer],
+        &quot;value.deserializer&quot; -&gt; classOf[StringDeserializer],
+        &quot;group.id&quot; -&gt; &quot;group1&quot;,
+        &quot;enable.auto.commit&quot; -&gt; (false: java.lang.Boolean)
+      )
+   
+    val cacheRDD = ssc.sparkContext.makeRDD(List(&quot;001 zhangsan&quot;, &quot;002 lisi&quot;, &quot;003 zhaoliu&quot;))
+      .map(item =&gt; (item.split(&quot;\\s+&quot;)(0), item.split(&quot;\\s+&quot;)(1)))
+      .distinct()
+      .cache()
+
+
+      //001 apple
+      KafkaUtils.createDirectStream(ssc,
+        LocationStrategies.PreferConsistent,
+        Subscribe[String,String](Array(&quot;topic01&quot;),kafkaParams))
+        .map(record =&gt; record.value())
+        .map(value=&gt;{
+          val tokens = value.split(&quot;\\s+&quot;)
+          (tokens(0),tokens(1))
+        })
+       .transform(rdd=&gt;{rdd.rightOuterJoin(cacheRDD)})
+      .filter(t=&gt; {t._2._1!=None})
+        .print()
+
+    ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+    ssc.start()
+    ssc.awaitTermination()
+</code></pre>
+<ul>
+<li>
+<h4 id="updatestatebykey">UpdateStateByKey</h4>
+</li>
+</ul>
+<pre><code class="language-java">val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;KafkaStreamWordCount&quot;)
+val ssc = new StreamingContext(conf, Seconds(1))
+ssc.checkpoint(&quot;hdfs://CentOS:9000/checkpoints&quot;)//在JVM启动参数中添加-D HADOOP_USER_NAME=root
+def updateFun(newValues: Seq[Int], runningCount: Option[Int]): Option[Int] = {
+   var total= newValues.sum+runningCount.getOrElse(0)
+   Some(total)
+}
+ssc.socketTextStream(&quot;CentOS&quot;,9999)
+    .flatMap(_.split(&quot;\\s+&quot;))
+    .map((_,1))
+    .updateStateByKey(updateFun)
+    .print()
+
+ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+ssc.start()
+ssc.awaitTermination()
+</code></pre>
+<blockquote>
+<p>因为UpdateStateByKey 算子每一次的输出都是全量输出，在做状态更新的时候代价较高，因此推荐大家使用<code>mapWithState</code></p>
+</blockquote>
+<ul>
+<li>mapWithState</li>
+</ul>
+<pre><code class="language-java">val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;KafkaStreamWordCount&quot;)
+val ssc = new StreamingContext(conf, Seconds(1))
+ssc.checkpoint(&quot;hdfs://CentOS:9000/checkpoints&quot;)
+def updateFun(newValues: Seq[Int], runningCount: Option[Int]): Option[Int] = {
+    var total= newValues.sum+runningCount.getOrElse(0)
+    Some(total)
+}
+ssc.socketTextStream(&quot;CentOS&quot;,9999)
+.flatMap(_.split(&quot;\\s+&quot;))
+.map((_,1))
+.mapWithState(StateSpec.function((k:String,v:Option[Int],state:State[Int])=&gt;{
+    var total=0
+    if(state.exists()){
+        total=state.getOption().getOrElse(0)
+    }
+    total += v.getOrElse(1)
+    state.update(total)//更新状态
+    (k,total)
+}))
+.print()
+
+ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+ssc.start()
+ssc.awaitTermination()
+</code></pre>
+<h3 id="重故障中重启中状态恢复">重故障中|重启中状态恢复</h3>
+<pre><code class="language-java">var checkpointPath=&quot;hdfs://CentOS:9000/checkpoints&quot;//设置检查点目录，一般将检查点目录存储在HDFS上
+var ssc=StreamingContext.getOrCreate(checkpointPath,()=&gt;{//第一次启时候初始化，一旦书写完成后，无法进行修改！
+    println(&quot;=======init=======&quot;)
+    val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;KafkaStreamWordCount&quot;)
+    val ssc = new StreamingContext(conf, Seconds(5))
+    ssc.checkpoint(checkpointPath)
+    def updateFun(newValues: Seq[Int], runningCount: Option[Int]): Option[Int] = {
+        var total= newValues.sum+runningCount.getOrElse(0)
+        Some(total)
+    }
+    ssc.socketTextStream(&quot;CentOS&quot;,9999)
+    .flatMap(_.split(&quot;\\s+&quot;))
+    .map((_,1))
+    .mapWithState(StateSpec.function((k:String,v:Option[Int],state:State[Int])=&gt;{
+        var total=0
+        if(state.exists()){
+            total=state.getOption().getOrElse(0)
+        }
+        total += v.getOrElse(1)
+        state.update(total)//更新状态
+        (k,total)
+    }))
+    .checkpoint(Seconds(5))//设置状态持久化的频率，该频率不能高于 微批 拆分频率 ts&gt;=5s
+    .print()
+    ssc
+})
+ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+ssc.start()
+ssc.awaitTermination()
+</code></pre>
+<h3 id="窗口函数-window">窗口函数 - window</h3>
+<p>Spark Streaming还提供窗口计算，允许您在滑动数据窗口上应用转换。下图说明了此滑动窗口。<br>
+<img src="https://img-blog.csdnimg.cn/20200527124949462.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
+以上描述了窗口长度是3个时间单位的<code>微批</code>,窗口的滑动间隔是2个时间单位的<code>微批</code>，注意：Spark的流处理中要求窗口的长度以及滑动间隔必须是微批的整数倍。</p>
+<pre><code class="language-java">val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;KafkaStreamWordCount&quot;)
+    val ssc = new StreamingContext(conf, Seconds(1))
+
+    ssc.socketTextStream(&quot;CentOS&quot;,9999)
+      .flatMap(_.split(&quot;\\s+&quot;))
+      .map((_,1))
+      .reduceByKeyAndWindow((v1:Int,v2:Int)=&gt; v1+v2,Seconds(5),Seconds(5))
+      .print()
+
+    ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+    ssc.start()
+    ssc.awaitTermination()
+</code></pre>
+<h3 id="output-operations">Output Operations</h3>
+<ul>
+<li><strong>foreachRDD</strong>(<em>func</em>)</li>
+</ul>
+<pre><code class="language-java">val conf = new SparkConf().setMaster(&quot;local[2]&quot;).setAppName(&quot;KafkaStreamWordCount&quot;)
+val ssc = new StreamingContext(conf, Seconds(1))
+
+ssc.socketTextStream(&quot;CentOS&quot;,9999)
+  .flatMap(_.split(&quot;\\s+&quot;))
+  .map((_,1))
+  .window(Seconds(5),Seconds(5))
+  .reduceByKey((v1:Int,v2:Int)=&gt; v1+v2)
+  .foreachRDD(rdd=&gt;{
+    rdd.foreachPartition(items=&gt;{
+        var jedisPool=new JedisPool(&quot;CentOS&quot;,6379)
+        val jedis = jedisPool.getResource
+        val pipeline = jedis.pipelined()//jedis批处理
+
+        val map = items.map(t=&gt;(t._1,t._2+&quot;&quot;)).toMap.asJava
+        pipeline.hmset(&quot;wordcount&quot;,map)
+
+         pipeline.sync()
+        jedis.close()
+    })
+  })
+  
+ssc.sparkContext.setLogLevel(&quot;FATAL&quot;)//关闭日志打印
+ssc.start()
+ssc.awaitTermination()
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/aAuqPKSPG/" class="tag">
+                    Spark
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/spark03/">
+                  <h3 class="post-title">
+                    Spark入门(四)——Spark RDD算子使用方法
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

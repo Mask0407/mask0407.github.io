@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Spark入门(七)——最全的Saprk SQL算子介绍与使用(下) | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593400819751">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+SQL语法查询
+
+单行查询
+模糊查询
+排序查询
+limit查询
+分组查询
+having过滤
+case-when
+行转列
+pivot
+Cube计算
+Join表连接
+子查询
+开窗函数
+
+开窗函数SQL解读
+ROW_NUM
+RANK()
+D..." />
+    <meta name="keywords" content="Spark,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593400819751" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Spark入门(七)——最全的Saprk SQL算子介绍与使用(下)</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#sql%E8%AF%AD%E6%B3%95%E6%9F%A5%E8%AF%A2">SQL语法查询</a>
+<ul>
+<li><a href="#%E5%8D%95%E8%A1%8C%E6%9F%A5%E8%AF%A2">单行查询</a></li>
+<li><a href="#%E6%A8%A1%E7%B3%8A%E6%9F%A5%E8%AF%A2">模糊查询</a></li>
+<li><a href="#%E6%8E%92%E5%BA%8F%E6%9F%A5%E8%AF%A2">排序查询</a></li>
+<li><a href="#limit%E6%9F%A5%E8%AF%A2">limit查询</a></li>
+<li><a href="#%E5%88%86%E7%BB%84%E6%9F%A5%E8%AF%A2">分组查询</a></li>
+<li><a href="#having%E8%BF%87%E6%BB%A4">having过滤</a></li>
+<li><a href="#case-when">case-when</a></li>
+<li><a href="#%E8%A1%8C%E8%BD%AC%E5%88%97">行转列</a></li>
+<li><a href="#pivot">pivot</a></li>
+<li><a href="#cube%E8%AE%A1%E7%AE%97">Cube计算</a></li>
+<li><a href="#join%E8%A1%A8%E8%BF%9E%E6%8E%A5">Join表连接</a></li>
+<li><a href="#%E5%AD%90%E6%9F%A5%E8%AF%A2">子查询</a></li>
+<li><a href="#%E5%BC%80%E7%AA%97%E5%87%BD%E6%95%B0">开窗函数</a>
+<ul>
+<li><a href="#%E5%BC%80%E7%AA%97%E5%87%BD%E6%95%B0sql%E8%A7%A3%E8%AF%BB">开窗函数SQL解读</a></li>
+<li><a href="#row_num">ROW_NUM</a></li>
+<li><a href="#rank">RANK()</a></li>
+<li><a href="#dense_rank-%E5%AF%86%E9%9B%86%E6%8E%92%E5%90%8D">DENSE_RANK() /密集排名</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%87%BD%E6%95%B0">自定义函数</a>
+<ul>
+<li><a href="#%E5%8D%95%E8%A1%8C%E5%87%BD%E6%95%B0">单行函数</a></li>
+<li><a href="#%E8%81%9A%E5%90%88%E5%87%BD%E6%95%B0untyped">聚合函数（untyped）</a></li>
+</ul>
+</li>
+<li><a href="#loadsave">Load/Save</a>
+<ul>
+<li><a href="#paquet">Paquet</a></li>
+<li><a href="#json">JSON</a></li>
+<li><a href="#orc%E5%AD%98%E5%82%A8%E5%8E%8B%E7%BC%A9%E6%A0%BC%E5%BC%8F%E6%AF%94%E8%BE%83%E8%8A%82%E7%9C%81%E7%A9%BA%E9%97%B4">ORC(存储压缩格式，比较节省空间)</a></li>
+<li><a href="#csv">CSV</a></li>
+<li><a href="#jdbc">JDBC</a></li>
+<li><a href="#dataframe%E8%BD%AC%E4%B8%BArdd">DataFrame转为RDD</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+(Spark SQL 查询)</p>
+<h2 id="sql语法查询">SQL语法查询</h2>
+<h3 id="单行查询">单行查询</h3>
+<pre><code class="language-java">// 单行查询
+var userDF = List((1, &quot;张三&quot;, true, 18, 15000, 1))
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;age&quot;, &quot;salary&quot;, &quot;dept&quot;)
+	
+userDF.createTempView(&quot;t_employee&quot;)
+
+val sql = &quot;select * from t_employee where name = '张三'&quot;
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+----+---+------+----+
+| id|name| sex|age|salary|dept|
++---+----+----+---+------+----+
+|  1|张三|true| 18| 15000|   1|
++---+----+----+---+------+----+
+</code></pre>
+<h3 id="模糊查询">模糊查询</h3>
+<pre><code class="language-java">var userDF= List((1,&quot;张三&quot;,true,18,15000,1))
+	.toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;age&quot;,&quot;salary&quot;,&quot;dept&quot;)
+	
+userDF.createTempView(&quot;t_employee&quot;)
+
+val sql=&quot;select * from t_employee where name like '%三%'&quot;
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+----+---+------+----+
+| id|name| sex|age|salary|dept|
++---+----+----+---+------+----+
+|  1|张三|true| 18| 15000|   1|
++---+----+----+---+------+----+
+</code></pre>
+<h3 id="排序查询">排序查询</h3>
+<pre><code class="language-java">var userDF = List((1, &quot;张三&quot;, true, 18, 15000, 1), (2, &quot;ls&quot;, false, 18, 12000, 1))
+	.toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;age&quot;, &quot;salary&quot;, &quot;dept&quot;)
+//构建视图
+userDF.createTempView(&quot;t_employee&quot;)
+val sql =
+	&quot;&quot;&quot;
+	  |select * from t_employee where salary &gt; 10000 order by salary desc
+	&quot;&quot;&quot;
+	.stripMargin
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+---+------+----+
+| id|name|  sex|age|salary|dept|
++---+----+-----+---+------+----+
+|  1|张三| true| 18| 15000|   1|
+|  2|李四|false| 18| 12000|   1|
++---+----+-----+---+------+----+
+</code></pre>
+<h3 id="limit查询">limit查询</h3>
+<pre><code class="language-java">var userDF= List( (1,&quot;张三&quot;,true,18,15000,1), 
+	(2,&quot;李四&quot;,false,18,12000,1), 
+	(3,&quot;王五&quot;,false,18,16000,2)
+) .toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;age&quot;,&quot;salary&quot;,&quot;dept&quot;)
+ 
+//构建视图 
+userDF.createTempView(&quot;t_employee&quot;) 
+val sql=
+	&quot;&quot;&quot;
+	  |select * from t_employee where salary &gt; 10000 order by salary desc limit 2 
+	&quot;&quot;&quot;.stripMargin
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+---+------+----+
+| id|name|  sex|age|salary|dept|
++---+----+-----+---+------+----+
+|  3|王五|false| 18| 16000|   2|
+|  1|张三| true| 18| 15000|   1|
++---+----+-----+---+------+----+
+</code></pre>
+<h3 id="分组查询">分组查询</h3>
+<pre><code class="language-java">var userDF= List( (1,&quot;张三&quot;,true,18,15000,1),
+	(2,&quot;李四&quot;,false,18,12000,1),
+	(3,&quot;王五&quot;,false,18,16000,2)
+) .toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;age&quot;,&quot;salary&quot;,&quot;dept&quot;)
+
+//构建视图
+userDF.createTempView(&quot;t_employee&quot;)
+val sql=
+	&quot;&quot;&quot;
+	  |select dept ,avg(salary) as avg_slalary from t_employee
+	  |group by dept order by avg_slalary desc
+	&quot;&quot;&quot;.stripMargin
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+----+-----------+
+|dept|avg_slalary|
++----+-----------+
+|   2|    16000.0|
+|   1|    13500.0|
++----+-----------+
+</code></pre>
+<h3 id="having过滤">having过滤</h3>
+<pre><code class="language-java">var userDF= List( (1,&quot;张三&quot;,true,18,15000,1),
+	(2,&quot;李四&quot;,false,18,12000,1),
+	(3,&quot;王五&quot;,false,18,16000,2)
+) .toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;age&quot;,&quot;salary&quot;,&quot;dept&quot;)
+
+//构建视图
+userDF.createTempView(&quot;t_employee&quot;)
+val sql=
+	&quot;&quot;&quot;
+	  | select dept ,avg(salary) as avg_slalary
+	  | from t_employee group by dept 
+	  | having avg_slalary &gt; 13500 
+	  | order by avg_slalary desc
+	&quot;&quot;&quot;.stripMargin
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+----+-----------+
+|dept|avg_slalary|
++----+-----------+
+|   2|    16000.0|
++----+-----------+
+</code></pre>
+<h3 id="case-when">case-when</h3>
+<pre><code class="language-java">var userDF= List( (1,&quot;张三&quot;,true,18,15000,1),
+	(2,&quot;李四&quot;,false,18,12000,1),
+	(3,&quot;王五&quot;,false,18,16000,2)
+) .toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;age&quot;,&quot;salary&quot;,&quot;dept&quot;)
+
+//构建视图
+userDF.createTempView(&quot;t_employee&quot;)
+val sql=
+	&quot;&quot;&quot;
+	  |select id,name,case sex when true then '男' else '女' end as sex_alias
+	  |from t_employee
+	&quot;&quot;&quot;.stripMargin
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+---------+
+| id|name|sex_alias|
++---+----+---------+
+|  1|张三|       男|
+|  2|李四|       女|
+|  3|王五|       女|
++---+----+---------+
+</code></pre>
+<h3 id="行转列">行转列</h3>
+<pre><code class="language-java">// 行转列
+var scoreDF = List(
+	(1, &quot;语文&quot;, 100),
+	(1, &quot;数学&quot;, 100),
+	(1, &quot;英语&quot;, 100),
+	(2, &quot;数学&quot;, 79),
+	(2, &quot;语文&quot;, 80),
+	(2, &quot;英语&quot;, 100)
+).toDF(&quot;id&quot;, &quot;course&quot;, &quot;score&quot;)
+scoreDF.createOrReplaceTempView(&quot;t_course&quot;)
+
+val sql =
+	&quot;&quot;&quot;
+	  |  select id,
+	  |  max(case course when '数学' then score else 0 end) as math,
+	  |  max(case course when '英语' then score else 0 end) as english,
+	  |  max(case course when '语文' then score else 0 end) as chinese
+	  |  from t_course group by id
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+-------+-------+
+| id|math|english|chinese|
++---+----+-------+-------+
+|  1| 100|    100|    100|
+|  2|  79|    100|     80|
++---+----+-------+-------+
+</code></pre>
+<h3 id="pivot">pivot</h3>
+<pre><code class="language-java">var scoreDF = List(
+	(1, &quot;语文&quot;, 100),
+	(1, &quot;数学&quot;, 100),
+	(1, &quot;英语&quot;, 100),
+	(2, &quot;数学&quot;, 79),
+	(2, &quot;语文&quot;, 80),
+	(2, &quot;英语&quot;, 100)
+).toDF(&quot;id&quot;, &quot;course&quot;, &quot;score&quot;)
+scoreDF.createOrReplaceTempView(&quot;t_course&quot;)
+
+val sql =
+	&quot;&quot;&quot;
+	  |select * 
+	  |from t_course 
+	  |pivot(max(score) for course in ('数学' ,'语文','英语'))
+	  |
+	&quot;&quot;&quot;.stripMargin
+	  
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+----+----+
+| id|数学|语文|英语|
++---+----+----+----+
+|  1| 100| 100| 100|
+|  2|  79|  80| 100|
++---+----+----+----+
+</code></pre>
+<blockquote>
+<p>在书写SQL的时候除去聚合字段和输出列明字段，其他字段作为groupby后的隐藏字段。</p>
+</blockquote>
+<h3 id="cube计算">Cube计算</h3>
+<pre><code class="language-java">// Cube计算
+val frame = List(
+	(110, 50, 80, 80),
+	(120, 60, 95, 75),
+	(120, 50, 96, 70)
+) .toDF(&quot;height&quot;, &quot;weight&quot;, &quot;uiq&quot;, &quot;ueq&quot;)
+frame.createTempView(&quot;t_user&quot;)
+
+val sql=
+	&quot;&quot;&quot;
+	  |select height,weight,avg(uiq),avg(ueq)
+	  |from t_user
+	  |group by cube(height,weight)
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+------+------+-----------------+--------+
+|height|weight|         avg(uiq)|avg(ueq)|
++------+------+-----------------+--------+
+|   110|    50|             80.0|    80.0|
+|   120|  null|             95.5|    72.5|
+|   120|    60|             95.0|    75.0|
+|  null|    60|             95.0|    75.0|	 // weight 是60的所有数据 的uiq、ueq平均值
+|  null|  null|90.33333333333333|    75.0|   // 所有数据的uiq、ueq平均值
+|   120|    50|             96.0|    70.0|
+|   110|  null|             80.0|    80.0|
+|  null|    50|             88.0|    75.0|
++------+------+-----------------+--------+
+</code></pre>
+<h3 id="join表连接">Join表连接</h3>
+<pre><code class="language-java">// join
+val userCatagoryCostDF=List(
+	(1,&quot;电脑配件&quot;,100),
+	(1,&quot;母婴用品&quot;,100), 
+	(1,&quot;生活用品&quot;,100),
+	(2,&quot;居家美食&quot;,79),
+	(2,&quot;消费电子&quot;,80),
+	(2,&quot;生活用品&quot;,100)
+).toDF(&quot;uid&quot;,&quot;category&quot;,&quot;cost&quot;)
+
+val usersDF= List(
+	(1,&quot;张晓三&quot;,true,18,15000),
+	(2,&quot;李晓四&quot;,true,18,18000),
+	(3,&quot;王晓五&quot;,false,18,10000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;age&quot;,&quot;salary&quot;)
+
+usersDF.createTempView(&quot;t_user&quot;)
+userCatagoryCostDF.createTempView(&quot;t_user_cost&quot;)
+
+val sql =
+	&quot;&quot;&quot;
+	  |select u.*,o.*
+	  |from t_user u
+	  |left join t_user_cost o
+	  |on u.id=o.uid
+	  |where uid is not null
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+------+----+---+------+---+--------+----+
+| id|  name| sex|age|salary|uid|category|cost|
++---+------+----+---+------+---+--------+----+
+|  1|张晓三|true| 18| 15000|  1|电脑配件| 100|
+|  1|张晓三|true| 18| 15000|  1|母婴用品| 100|
+|  1|张晓三|true| 18| 15000|  1|生活用品| 100|
+|  2|李晓四|true| 18| 18000|  2|居家美食|  79|
+|  2|李晓四|true| 18| 18000|  2|消费电子|  80|
+|  2|李晓四|true| 18| 18000|  2|生活用品| 100|
++---+------+----+---+------+---+--------+----+
+</code></pre>
+<h3 id="子查询">子查询</h3>
+<pre><code class="language-java">// 子查询
+var df=List(
+	(1,&quot;zs&quot;,true,1,15000),
+	(2,&quot;ls&quot;,false,2,18000),
+	(3,&quot;ww&quot;,false,2,14000),
+	(4,&quot;zl&quot;,false,1,18000),
+	(5,&quot;win7&quot;,false,1,16000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;dept&quot;,&quot;salary&quot;)
+df.createTempView(&quot;t_employee&quot;)
+
+val sql=
+	&quot;&quot;&quot;
+	  |select id,name,salary,dept,
+	  |(select avg(salary) from t_employee t2 where t1.dept=t2.dept) as avg_salary
+	  |from t_employee t1
+	  |order by dept desc
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+------+----+------------------+
+| id|name|salary|dept|        avg_salary|
++---+----+------+----+------------------+
+|  2|  ls| 18000|   2|           16000.0|
+|  3|  ww| 14000|   2|           16000.0|
+|  5|win7| 16000|   1|16333.333333333334|
+|  1|  zs| 15000|   1|16333.333333333334|
+|  4|  zl| 18000|   1|16333.333333333334|
++---+----+------+----+------------------+
+</code></pre>
+<blockquote>
+<p>在spark SQL不允许在子查询中使用非等值连接。（MySQL|Oracle支持）</p>
+</blockquote>
+<h3 id="开窗函数">开窗函数</h3>
+<p>在正常的统计分析中 ，通常使用聚合函数作为分析，聚合分析函数的特点是将n行记录合并成一行，在数据库的统计当中 还有一种统计称为开窗统计，开窗函数可以实现将一行变成多行。可以将数据库查询的每一条记录比作是一幢高楼的一 层, 开窗函数就是在每一层开一扇窗, 让每一层能看到整装楼的全貌或一部分。</p>
+<pre><code class="language-java">// 开窗函数
+var df=List(
+	(1,&quot;zs&quot;,true,1,15000),
+	(2,&quot;ls&quot;,false,2,18000),
+	(3,&quot;ww&quot;,false,2,14000),
+	(4,&quot;zl&quot;,false,1,18000),
+	(5,&quot;win7&quot;,false,1,16000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;dept&quot;,&quot;salary&quot;)
+df.createTempView(&quot;t_employee&quot;)
+
+val sql=
+	&quot;&quot;&quot;
+	  |select id,name,salary,dept,
+	  |count(id) over(partition by dept order by salary desc) as rank,
+	  |(count(id) over(partition by dept order by salary desc rows between current row and unbounded following) - 1) as low_than_me,
+	  |avg(salary) over(partition by dept rows between unbounded preceding and unbounded following) as avg_salary,
+	  |avg(salary) over() as all_avg_salary 
+	  |from t_employee t1 order by dept desc
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+spark.stop()
+</code></pre>
+<pre><code>+---+----+------+----+----+-----------+------------------+--------------+
+| id|name|salary|dept|rank|low_than_me|        avg_salary|all_avg_salary|
++---+----+------+----+----+-----------+------------------+--------------+
+|  2|  ls| 18000|   2|   1|          1|           16000.0|       16200.0|
+|  3|  ww| 14000|   2|   2|          0|           16000.0|       16200.0|
+|  4|  zl| 18000|   1|   1|          2|16333.333333333334|       16200.0|
+|  5|win7| 16000|   1|   2|          1|16333.333333333334|       16200.0|
+|  1|  zs| 15000|   1|   3|          0|16333.333333333334|       16200.0|
++---+----+------+----+----+-----------+------------------+--------------+
+</code></pre>
+<h4 id="开窗函数sql解读">开窗函数SQL解读</h4>
+<pre><code class="language-sql">	  select id,name,salary,dept,
+	  # 按部门分组、工资倒叙排序展示 当前部门的id总数
+	  count(id) over(partition by dept order by salary desc) as rank,
+	  # 按部门分组、工资倒叙排序展示当前行至最后一行id总数-1
+	  (count(id) over(partition by dept order by salary desc rows between current row and unbounded following) - 1) as low_than_me,
+	  # 按部门分组展示首行至尾行的平均工资 如：2部门平均工资16000 1部门平均工资16333.333333333334
+	  avg(salary) over(partition by dept rows between unbounded preceding and unbounded following) as avg_salary,
+	  # 展示所有员工的平均工资
+	  avg(salary) over() as all_avg_salary 
+	  from t_employee t1 order by dept desc
+</code></pre>
+<ul>
+<li>总结</li>
+</ul>
+<blockquote>
+<p>聚合函数(字段) over ([[partition by 字段] order by 字段 asc [rows between 起始行偏移量 and 终止偏移量]] )</p>
+</blockquote>
+<ul>
+<li>其中：偏移量的取值</li>
+</ul>
+<blockquote>
+<p>preceding：用于累加前N行（分区之内）。若是从分区第一行头开始，则为 unbounded。 N为：相对当前行向前 的偏移量<code>负数</code>。<br>
+following:与preceding相反，累加后N行（分区之内）。若是累加到该分区结束则为unbounded。N为：相对当 前行向后的偏移量<code>正数</code> current row：顾名思义，当前行，偏移量为0</p>
+</blockquote>
+<h4 id="row_num">ROW_NUM</h4>
+<p>统计当前记录所在的行号</p>
+<pre><code class="language-java">// ROW_NUM
+var df=List(
+	(1,&quot;zs&quot;,true,1,15000),
+	(2,&quot;ls&quot;,false,2,18000),
+	(3,&quot;ww&quot;,false,2,14000),
+	(4,&quot;zl&quot;,false,1,18000),
+	(5,&quot;win7&quot;,false,1,16000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;dept&quot;,&quot;salary&quot;)
+df.createTempView(&quot;t_employee&quot;)
+
+val sql=
+	&quot;&quot;&quot;
+	  |select id,name,salary,dept,
+	  |ROW_NUMBER() over(partition by dept order by salary desc) as rank
+	  |from t_employee t1
+	  |order by dept desc
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+------+----+----+
+| id|name|salary|dept|rank|
++---+----+------+----+----+
+|  2|  ls| 18000|   2|   1|
+|  3|  ww| 14000|   2|   2|
+|  4|  zl| 18000|   1|   1|
+|  5|win7| 16000|   1|   2|
+|  1|  zs| 15000|   1|   3|
++---+----+------+----+----+
+</code></pre>
+<blockquote>
+<p>如果部门存在相同薪资此时ROW_NUMBER只能表示当前记录在窗口行标</p>
+</blockquote>
+<h4 id="rank">RANK()</h4>
+<pre><code class="language-java">// RANK
+var df=List(
+	(1,&quot;zs&quot;,true,1,15000),
+	(2,&quot;ls&quot;,false,2,18000),
+	(3,&quot;ww&quot;,false,2,14000),
+	(4,&quot;zl&quot;,false,1,18000),
+	(6,&quot;zl1&quot;,true,1,18000),
+	(5,&quot;win7&quot;,false,1,16000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;dept&quot;,&quot;salary&quot;)
+df.createTempView(&quot;t_employee&quot;)
+
+val sql=
+	&quot;&quot;&quot;
+	  |select id,name,salary,dept,
+	  |RANK() over(partition by dept order by salary desc) as rank
+	  |from t_employee t1
+	  |order by dept desc
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+------+----+----+
+| id|name|salary|dept|rank|
++---+----+------+----+----+
+|  2|  ls| 18000|   2|   1|
+|  3|  ww| 14000|   2|   2|
+|  4|  zl| 18000|   1|   1|
+|  6| zl1| 18000|   1|   1|
+|  5|win7| 16000|   1|   3| //因为出现两个排名为1的，所有这里是3，故而排名序号不连续
+|  1|  zs| 15000|   1|   4|
++---+----+------+----+----+
+</code></pre>
+<blockquote>
+<p>与ROW_NUM相比，排名特点是不连续。</p>
+</blockquote>
+<h4 id="dense_rank-密集排名">DENSE_RANK() /密集排名</h4>
+<pre><code class="language-java">// DENSE_RANK/密集排名
+var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(6, &quot;zl1&quot;, true, 1, 18000),
+	(5, &quot;win7&quot;, false, 1, 16000)
+).toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+df.createTempView(&quot;t_employee&quot;)
+
+val sql =
+	&quot;&quot;&quot;
+	  |select id,name,salary,dept,
+	  |DENSE_RANK() over(partition by dept order by salary desc) as rank
+	  |from t_employee t1
+	  |order by dept desc
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+------+----+----+
+| id|name|salary|dept|rank|
++---+----+------+----+----+
+|  3|  ww| 14000|   2|   2|
+|  2|  ls| 18000|   2|   1|
+|  4|  zl| 18000|   1|   1|
+|  6| zl1| 18000|   1|   1|
+|  1|  zs| 15000|   1|   3|
+|  5|win7| 16000|   1|   2|
++---+----+------+----+----+
+</code></pre>
+<h2 id="自定义函数">自定义函数</h2>
+<h3 id="单行函数">单行函数</h3>
+<pre><code class="language-java">// 自定义单行函数
+var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(6, &quot;zl1&quot;, true, 1, 18000),
+	(5, &quot;win7&quot;, false, 1, 16000)
+).toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+df.createTempView(&quot;t_employee&quot;)
+
+spark.udf
+	.register(&quot;convertSex&quot;, (sex: Boolean) =&gt; {
+		sex match {
+			case true =&gt; &quot;男&quot;
+			case false =&gt; &quot;女&quot;
+		}
+	})
+	
+val sql =
+	&quot;&quot;&quot;
+	  |select id,name,convertSex(sex) as usex
+	  |from t_employee
+	&quot;&quot;&quot;.stripMargin
+	
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+---+----+----+
+| id|name|usex|
++---+----+----+
+|  1|  zs|  男|
+|  2|  ls|  女|
+|  3|  ww|  女|
+|  4|  zl|  女|
+|  6| zl1|  男|
+|  5|win7|  女|
++---+----+----+
+</code></pre>
+<h3 id="聚合函数untyped">聚合函数（untyped）</h3>
+<p>只需要写一个类继承 <code>UserDefinedAggregateFunction</code> 即可。</p>
+<pre><code class="language-java">import org.apache.spark.sql.Row
+import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction}
+import org.apache.spark.sql.types.{DataType, DoubleType, StructType}
+
+class CustomSum extends UserDefinedAggregateFunction {
+	//1.输入的字段类型信息 name属性 叫什么无所谓
+	override def inputSchema: StructType = {
+		new StructType().add(&quot;salary&quot;, DoubleType)
+	}
+
+	//2.中间结果变量类型
+	override def bufferSchema: StructType = {
+		new StructType().add(&quot;taotalsalary&quot;, DoubleType)
+	}
+
+	//3.最终返回结果的类型
+	override def dataType: DataType = DoubleType
+
+	//4.设置返回结果类型是否固定
+	override def deterministic: Boolean = true
+
+	//5.初始化中间结果
+	override def initialize(buffer: MutableAggregationBuffer): Unit = {
+		//第0个位置元素是0.0
+		buffer.update(0, 0.0)
+	}
+
+	//6.将传如的数值添加到中间结果变量中
+	override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
+		val history = buffer.getAs[Double](0)
+		val current = input.getAs[Double](0)
+		buffer.update(0, history + current)
+	}
+
+	//7.将局部结果聚合到buffer1中
+	override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
+		val result = buffer1.getAs[Double](0) + buffer2.getAs[Double](0)
+		buffer1.update(0, result)
+	}
+
+	//8.返回最终结果 
+	override def evaluate(buffer: Row): Any = {
+		buffer.getAs[Double](0)
+	}
+}
+</code></pre>
+<ul>
+<li>spark 代码</li>
+</ul>
+<pre><code class="language-java">// 自定义聚合函数（untyped）
+var df = List(
+	(1, &quot;zs&quot;, true, 1, 15000),
+	(2, &quot;ls&quot;, false, 2, 18000),
+	(3, &quot;ww&quot;, false, 2, 14000),
+	(4, &quot;zl&quot;, false, 1, 18000),
+	(6, &quot;zl1&quot;, true, 1, 18000),
+	(5, &quot;win7&quot;, false, 1, 16000)
+).toDF(&quot;id&quot;, &quot;name&quot;, &quot;sex&quot;, &quot;dept&quot;, &quot;salary&quot;)
+df.createTempView(&quot;t_employee&quot;)
+
+spark.udf
+	.register(&quot;customSum&quot;, new CustomSum)
+val sql =
+	&quot;&quot;&quot;
+	  |select dept,customSum(salary)
+	  |from t_employee
+	  |group by dept
+	&quot;&quot;&quot;.stripMargin
+spark.sql(sql)
+	.show()
+</code></pre>
+<pre><code>+----+---------------------------------+
+|dept|customsum(CAST(salary AS DOUBLE))|
++----+---------------------------------+
+|   1|                          67000.0|
+|   2|                          32000.0|
++----+---------------------------------+
+</code></pre>
+<h2 id="loadsave">Load/Save</h2>
+<h3 id="paquet">Paquet</h3>
+<ul>
+<li>Parquet简介</li>
+</ul>
+<blockquote>
+<p>Parquet是面向分析型业务的列式存储格式，由Twitter和Cloudera合作开发，2015年5月从Apache的孵化器里毕业成为Apache顶级项目<br>
+<a href="http://parquet.apache.org/">http://parquet.apache.org/ </a></p>
+</blockquote>
+<pre><code class="language-java">// paquet
+var df=List(
+	(1,&quot;zs&quot;,true,1,15000),
+	(2,&quot;ls&quot;,false,2,18000),
+	(3,&quot;ww&quot;,false,2,14000),
+	(4,&quot;zl&quot;,false,1,18000),
+	(6,&quot;zl1&quot;,true,1,18000),
+	(5,&quot;win7&quot;,false,1,16000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;dept&quot;,&quot;salary&quot;)
+
+df.write
+	.format(&quot;parquet&quot;)
+	.save(&quot;file:////Users/mashikang/IdeaProjects/spark_sql/src/main/resources/parquet&quot;)
+	
+spark.read
+	.parquet(&quot;file:////Users/mashikang/IdeaProjects/spark_sql/src/main/resources/parquet&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+------+
+| id|name|  sex|dept|salary|
++---+----+-----+----+------+
+|  5|win7|false|   1| 16000|
+|  6| zl1| true|   1| 18000|
+|  4|  zl|false|   1| 18000|
+|  3|  ww|false|   2| 14000|
+|  1|  zs| true|   1| 15000|
+|  2|  ls|false|   2| 18000|
++---+----+-----+----+------+
+</code></pre>
+<ul>
+<li>存储文件样式<br>
+<img src="https://img-blog.csdnimg.cn/20200612151145861.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></li>
+</ul>
+<h3 id="json">JSON</h3>
+<pre><code class="language-java">// json
+var df=List(
+	(1,&quot;zs&quot;,true,1,15000),
+	(2,&quot;ls&quot;,false,2,18000),
+	(3,&quot;ww&quot;,false,2,14000),
+	(4,&quot;zl&quot;,false,1,18000),
+	(6,&quot;zl1&quot;,true,1,18000),
+	(5,&quot;win7&quot;,false,1,16000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;dept&quot;,&quot;salary&quot;)
+
+df.write
+	.format(&quot;json&quot;)
+	.save(&quot;file:///Users/mashikang/IdeaProjects/spark_sql/src/main/resources/json&quot;)
+spark.read
+	.json(&quot;file:///Users/mashikang/IdeaProjects/spark_sql/src/main/resources/json&quot;)
+	.show()
+</code></pre>
+<pre><code>+----+---+----+------+-----+
+|dept| id|name|salary|  sex|
++----+---+----+------+-----+
+|   1|  5|win7| 16000|false|
+|   2|  3|  ww| 14000|false|
+|   1|  4|  zl| 18000|false|
+|   2|  2|  ls| 18000|false|
+|   1|  6| zl1| 18000| true|
+|   1|  1|  zs| 15000| true|
++----+---+----+------+-----+
+</code></pre>
+<h3 id="orc存储压缩格式比较节省空间">ORC(存储压缩格式，比较节省空间)</h3>
+<pre><code>// ORC
+var df=List(
+	(1,&quot;zs&quot;,true,1,15000),
+	(2,&quot;ls&quot;,false,2,18000),
+	(3,&quot;ww&quot;,false,2,14000),
+	(4,&quot;zl&quot;,false,1,18000),
+	(6,&quot;zl1&quot;,true,1,18000),
+	(5,&quot;win7&quot;,false,1,16000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;dept&quot;,&quot;salary&quot;)
+
+df.write
+	.format(&quot;orc&quot;)
+	.save(&quot;file:///Users/mashikang/IdeaProjects/spark_sql/src/main/resources/orc&quot;)
+	
+spark.read
+	.orc(&quot;file:///Users/mashikang/IdeaProjects/spark_sql/src/main/resources/orc&quot;)
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+------+
+| id|name|  sex|dept|salary|
++---+----+-----+----+------+
+|  5|win7|false|   1| 16000|
+|  4|  zl|false|   1| 18000|
+|  3|  ww|false|   2| 14000|
+|  6| zl1| true|   1| 18000|
+|  1|  zs| true|   1| 15000|
+|  2|  ls|false|   2| 18000|
++---+----+-----+----+------+
+</code></pre>
+<h3 id="csv">CSV</h3>
+<pre><code>// CSV
+var df=List(
+	(1,&quot;zs&quot;,true,1,15000),
+	(2,&quot;ls&quot;,false,2,18000),
+	(3,&quot;ww&quot;,false,2,14000),
+	(4,&quot;zl&quot;,false,1,18000),
+	(6,&quot;zl1&quot;,true,1,18000),
+	(5,&quot;win7&quot;,false,1,16000)
+).toDF(&quot;id&quot;,&quot;name&quot;,&quot;sex&quot;,&quot;dept&quot;,&quot;salary&quot;)
+
+df.write
+	.format(&quot;csv&quot;) 
+	.option(&quot;sep&quot;, &quot;,&quot;) 
+	.option(&quot;inferSchema&quot;, &quot;true&quot;)
+	.option(&quot;header&quot;, &quot;true&quot;) 
+	.save(&quot;file:///Users/mashikang/IdeaProjects/spark_sql/src/main/resources/csv&quot;) 
+spark.read 
+	.option(&quot;sep&quot;, &quot;,&quot;) 
+	.option(&quot;inferSchema&quot;, &quot;true&quot;) 
+	.option(&quot;header&quot;, &quot;true&quot;) 
+	.csv(&quot;file:///Users/mashikang/IdeaProjects/spark_sql/src/main/resources/csv&quot;) 
+	.show()
+</code></pre>
+<pre><code>+---+----+-----+----+------+
+| id|name|  sex|dept|salary|
++---+----+-----+----+------+
+|  5|win7|false|   1| 16000|
+|  4|  zl|false|   1| 18000|
+|  3|  ww|false|   2| 14000|
+|  2|  ls|false|   2| 18000|
+|  6| zl1| true|   1| 18000|
+|  1|  zs| true|   1| 15000|
++---+----+-----+----+------+
+</code></pre>
+<h3 id="jdbc">JDBC</h3>
+<pre><code class="language-java">// JDBC
+val usersDF = List(
+	(1, &quot;张晓三&quot;, 1, 15000),
+	(2, &quot;李晓四&quot;, 1, 18000),
+	(3, &quot;王晓五&quot;, 1, 10000)
+).toDF(&quot;id&quot;, &quot;name&quot;, &quot;dept&quot;, &quot;salary&quot;)
+
+usersDF.write
+	.format(&quot;jdbc&quot;)
+	.mode(SaveMode.Overwrite)
+	.option(&quot;user&quot;, &quot;root&quot;)
+	.option(&quot;password&quot;, &quot;root&quot;)
+	.option(&quot;url&quot;, &quot;jdbc:mysql://localhost:3306/test&quot;)
+	.option(&quot;dbtable&quot;, &quot;t_user&quot;)
+	.save()
+	
+val props = new Properties()
+props.put(&quot;user&quot;, &quot;root&quot;)
+props.put(&quot;password&quot;, &quot;root&quot;)
+
+spark.read
+	.jdbc(&quot;jdbc:mysql://localhost:3306/test&quot;, &quot;t_user&quot;, props)
+	.show()
+</code></pre>
+<p>或者</p>
+<pre><code class="language-java">val usersDF = List(
+	(1, &quot;张晓三&quot;, 1, 15000),
+	(2, &quot;李晓四&quot;, 1, 18000),
+	(3, &quot;王晓五&quot;, 1, 10000)
+).toDF(&quot;id&quot;, &quot;name&quot;, &quot;dept&quot;, &quot;salary&quot;)
+usersDF.write
+	.format(&quot;jdbc&quot;)
+	.mode(SaveMode.Overwrite)
+	.option(&quot;user&quot;, &quot;root&quot;)
+	.option(&quot;password&quot;, &quot;root&quot;)
+	.option(&quot;url&quot;, &quot;jdbc:mysql://localhost:3306/test&quot;)
+	.option(&quot;dbtable&quot;, &quot;t_user&quot;)
+	.save()
+
+spark.read.format(&quot;jdbc&quot;)
+			.option(&quot;user&quot;, &quot;root&quot;)
+			.option(&quot;password&quot;, &quot;root&quot;)
+			.option(&quot;url&quot;, &quot;jdbc:mysql://localhost:3306/test&quot;)
+			.option(&quot;dbtable&quot;, &quot;t_user&quot;)
+			.load()
+			.show()
+</code></pre>
+<h3 id="dataframe转为rdd">DataFrame转为RDD</h3>
+<pre><code class="language-java">val usersDF = List(
+	(1, &quot;张晓三&quot;, 1, 15000.0),
+	(2, &quot;李晓四&quot;, 1, 18000.0),
+	(3, &quot;王晓五&quot;, 1, 10000.0)
+).toDF(&quot;id&quot;, &quot;name&quot;, &quot;dept&quot;, &quot;salary&quot;)
+usersDF.rdd.foreachPartition(its =&gt; {
+	its.foreach(row =&gt; {
+		val id = row.getAs[Int](&quot;id&quot;)
+		val name = row.getAs[String](&quot;name&quot;)
+		val salary = row.getAs[Double](&quot;salary&quot;)
+		println(s&quot;$id,$name,$salary&quot;)
+	})
+})
+</code></pre>
+<pre><code>2,李晓四,18000.0
+3,王晓五,10000.0
+1,张晓三,15000.0
+</code></pre>
+<!-- more -->
+<!-- more -->
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/aAuqPKSPG/" class="tag">
+                    Spark
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/spark05/">
+                  <h3 class="post-title">
+                    Spark入门(六)——最全的Saprk SQL算子介绍与使用(上)
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
