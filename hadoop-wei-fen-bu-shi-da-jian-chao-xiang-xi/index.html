@@ -1,22 +1,132 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
-    <id>https://mask0407.github.io</id>
-    <title>个人博客</title>
-    <updated>2020-06-29T02:42:23.410Z</updated>
-    <generator>https://github.com/jpmonette/feed</generator>
-    <link rel="alternate" href="https://mask0407.github.io"/>
-    <link rel="self" href="https://mask0407.github.io/atom.xml"/>
-    <subtitle>温故而知新</subtitle>
-    <logo>https://mask0407.github.io/images/avatar.png</logo>
-    <icon>https://mask0407.github.io/favicon.ico</icon>
-    <rights>All rights reserved 2020, 个人博客</rights>
-    <entry>
-        <title type="html"><![CDATA[Hadoop 伪分布式搭建(超详细)]]></title>
-        <id>https://mask0407.github.io/hadoop-wei-fen-bu-shi-da-jian-chao-xiang-xi/</id>
-        <link href="https://mask0407.github.io/hadoop-wei-fen-bu-shi-da-jian-chao-xiang-xi/">
-        </link>
-        <updated>2020-06-29T02:39:28.000Z</updated>
-        <content type="html"><![CDATA[<!-- more -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Hadoop 伪分布式搭建(超详细) | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593398537565">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+虚拟机准备阶段操作
+
+安全设置
+
+防火墙相关指令
+关闭关闭selinux
+
+
+IP设置
+
+查看机器IP
+修改主机名
+修改IP及主机名映射
+
+
+SSH免密登陆
+
+
+Hadoop伪分布式搭建
+
+JDK配置
+
+解压
+配置环境变量
+
+
+Hado..." />
+    <meta name="keywords" content="Hadoop,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593398537565" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Hadoop 伪分布式搭建(超详细)</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <!-- more -->
 <p><ul class="markdownIt-TOC">
 <li><a href="#%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%87%86%E5%A4%87%E9%98%B6%E6%AE%B5%E6%93%8D%E4%BD%9C">虚拟机准备阶段操作</a>
 <ul>
@@ -236,16 +346,58 @@ export PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 http://CentOS:8088 访问 yarn<br>
 <img src="https://img-blog.csdnimg.cn/20200624174037209.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"><br>
 <img src="https://img-blog.csdnimg.cn/20200624174138121.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[Hello]]></title>
-        <id>https://mask0407.github.io/hello-gridea/</id>
-        <link href="https://mask0407.github.io/hello-gridea/">
-        </link>
-        <updated>2020-06-28T16:00:00.000Z</updated>
-        <content type="html"><![CDATA[<p>👏  欢迎进入 <strong>我的博客</strong> ！</p>
-<p>😘 Enjoy~</p>
-]]></content>
-    </entry>
-</feed>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/mWPQYQko7/" class="tag">
+                    Hadoop
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/hello-gridea/">
+                  <h3 class="post-title">
+                    Hello
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
