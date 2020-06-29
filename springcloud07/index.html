@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>关于Springboot、SpringCloud以及SpringCloud-Alibaba Nacos依赖问题 | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593400024594">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+SpringBoot和SpringCloud大版本对应关系
+Alibaba组件版本关系
+SpringBoot、Cloud、Alibaba 毕业版本依赖关系(推荐使用)
+依赖管理
+
+RELEASE 版本
+
+
+Alibaba组件依赖坐标示..." />
+    <meta name="keywords" content="SpringCloud,微服务" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593400024594" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">关于Springboot、SpringCloud以及SpringCloud-Alibaba Nacos依赖问题</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#springboot%E5%92%8Cspringcloud%E5%A4%A7%E7%89%88%E6%9C%AC%E5%AF%B9%E5%BA%94%E5%85%B3%E7%B3%BB">SpringBoot和SpringCloud大版本对应关系</a></li>
+<li><a href="#alibaba%E7%BB%84%E4%BB%B6%E7%89%88%E6%9C%AC%E5%85%B3%E7%B3%BB">Alibaba组件版本关系</a></li>
+<li><a href="#springboot-cloud-alibaba-%E6%AF%95%E4%B8%9A%E7%89%88%E6%9C%AC%E4%BE%9D%E8%B5%96%E5%85%B3%E7%B3%BB%E6%8E%A8%E8%8D%90%E4%BD%BF%E7%94%A8">SpringBoot、Cloud、Alibaba 毕业版本依赖关系(推荐使用)</a></li>
+<li><a href="#%E4%BE%9D%E8%B5%96%E7%AE%A1%E7%90%86">依赖管理</a>
+<ul>
+<li><a href="#release-%E7%89%88%E6%9C%AC">RELEASE 版本</a></li>
+</ul>
+</li>
+<li><a href="#alibaba%E7%BB%84%E4%BB%B6%E4%BE%9D%E8%B5%96%E5%9D%90%E6%A0%87%E7%A4%BA%E4%BE%8B">Alibaba组件依赖坐标示例</a></li>
+</ul>
+</li>
+</ul>
+(依赖关系)<br>
+由于目前阿里的SpringCloud组件以及孵化成功，导致写项目导入pom依赖坐标时比较纠结，网上对版本的兼容介绍也变得五花八门。</p>
+<h2 id="springboot和springcloud大版本对应关系">SpringBoot和SpringCloud大版本对应关系</h2>
+<table>
+<thead>
+<tr>
+<th>Spring Boot</th>
+<th>Spring Cloud</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.2.x</td>
+<td>Angel版本</td>
+</tr>
+<tr>
+<td>1.3.x</td>
+<td>Brixton版本</td>
+</tr>
+<tr>
+<td>1.4.x stripes</td>
+<td>Camden版本</td>
+</tr>
+<tr>
+<td>1.5.x</td>
+<td>Dalston版本、Edgware版本</td>
+</tr>
+<tr>
+<td>2.0.x</td>
+<td>Finchley版本</td>
+</tr>
+<tr>
+<td>2.1.x</td>
+<td>Greenwich.SR2</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><a href="https://start.spring.io/actuator/info">详细介绍，建议火狐浏览器</a></li>
+</ul>
+<h2 id="alibaba组件版本关系">Alibaba组件版本关系</h2>
+<table>
+<thead>
+<tr>
+<th>Spring Cloud Alibaba Version</th>
+<th>Sentinel Version</th>
+<th>Nacos Version</th>
+<th>RocketMQ Version</th>
+<th>Dubbo Version</th>
+<th>Seata Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(毕业版本) 2.2.0.RELEASE</td>
+<td>1.7.1</td>
+<td>1.1.4</td>
+<td>4.4.0</td>
+<td>2.7.4.1</td>
+<td>1.0.0</td>
+</tr>
+<tr>
+<td>(毕业版本) 2.1.1.RELEASE or 2.0.1.RELEASE or 1.5.1.RELEASE</td>
+<td>1.7.0</td>
+<td>1.1.4</td>
+<td>4.4.0</td>
+<td>2.7.3</td>
+<td>0.9.0</td>
+</tr>
+<tr>
+<td>(毕业版本) 2.1.0.RELEASE or 2.0.0.RELEASE or 1.5.0.RELEASE</td>
+<td>1.6.3</td>
+<td>1.1.1</td>
+<td>4.4.0</td>
+<td>2.7.3</td>
+<td>0.7.1</td>
+</tr>
+<tr>
+<td>(孵化器版本) 0.9.0.RELEASE or 0.2.2.RELEASE or 0.1.2.RELEASE</td>
+<td>1.5.2</td>
+<td>1.0.0</td>
+<td>4.4.0</td>
+<td>2.7.1</td>
+<td>0.4.2</td>
+</tr>
+<tr>
+<td>(孵化器版本) 0.2.1.RELEASE or 0.1.1.RELEASE</td>
+<td>1.4.0</td>
+<td>0.6.2</td>
+<td>4.3.1</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>(孵化器版本) 0.2.0.RELEASE or 0.1.0.RELEASE</td>
+<td>1.3.0-GA</td>
+<td>0.3.0</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<h2 id="springboot-cloud-alibaba-毕业版本依赖关系推荐使用">SpringBoot、Cloud、Alibaba 毕业版本依赖关系(推荐使用)</h2>
+<table>
+<thead>
+<tr>
+<th>Spring Cloud Version</th>
+<th>Spring Cloud Alibaba Version</th>
+<th>Spring Boot Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Spring Cloud Hoxton</td>
+<td>2.2.0.RELEASE</td>
+<td>2.2.X.RELEASE</td>
+</tr>
+<tr>
+<td>Spring Cloud Greenwich</td>
+<td>2.1.1.RELEASE</td>
+<td>2.1.X.RELEASE</td>
+</tr>
+<tr>
+<td>Spring Cloud Finchley</td>
+<td>2.0.1.RELEASE</td>
+<td>2.0.X.RELEASE</td>
+</tr>
+<tr>
+<td>Spring Cloud Edgware</td>
+<td>1.5.1.RELEASE</td>
+<td>1.5.X.RELEASE</td>
+</tr>
+</tbody>
+</table>
+<h2 id="依赖管理">依赖管理</h2>
+<p>Spring Cloud Alibaba BOM 包含了它所使用的所有依赖的版本。</p>
+<h3 id="release-版本">RELEASE 版本</h3>
+<ul>
+<li>Spring Cloud Hoxton<br>
+如果需要使用 Spring Cloud Hoxton 版本，请在 dependencyManagement 中添加如下内容</li>
+</ul>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;com.alibaba.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-alibaba-dependencies&lt;/artifactId&gt;
+    &lt;version&gt;2.2.0.RELEASE&lt;/version&gt;
+    &lt;type&gt;pom&lt;/type&gt;
+    &lt;scope&gt;import&lt;/scope&gt;
+&lt;/dependency&gt;
+```xml
+
+- Spring Cloud Greenwich
+如果需要使用 Spring Cloud Greenwich 版本，请在 dependencyManagement 中添加如下内容
+```xml
+&lt;dependency&gt;
+    &lt;groupId&gt;com.alibaba.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-alibaba-dependencies&lt;/artifactId&gt;
+    &lt;version&gt;2.1.1.RELEASE&lt;/version&gt;
+    &lt;type&gt;pom&lt;/type&gt;
+    &lt;scope&gt;import&lt;/scope&gt;
+&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>Spring Cloud Finchley<br>
+如果需要使用 Spring Cloud Finchley 版本，请在 dependencyManagement 中添加如下内容</li>
+</ul>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;com.alibaba.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-alibaba-dependencies&lt;/artifactId&gt;
+    &lt;version&gt;2.0.1.RELEASE&lt;/version&gt;
+    &lt;type&gt;pom&lt;/type&gt;
+    &lt;scope&gt;import&lt;/scope&gt;
+&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>Spring Cloud Edgware<br>
+如果需要使用 Spring Cloud Edgware 版本，请在 dependencyManagement 中添加如下内容</li>
+</ul>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;com.alibaba.cloud&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-cloud-alibaba-dependencies&lt;/artifactId&gt;
+    &lt;version&gt;1.5.1.RELEASE&lt;/version&gt;
+    &lt;type&gt;pom&lt;/type&gt;
+    &lt;scope&gt;import&lt;/scope&gt;
+&lt;/dependency&gt;
+</code></pre>
+<h2 id="alibaba组件依赖坐标示例">Alibaba组件依赖坐标示例</h2>
+<p>以Nacos为例</p>
+<pre><code class="language-xml">		&lt;dependency&gt;
+			&lt;groupId&gt;com.alibaba.cloud&lt;/groupId&gt;
+			&lt;artifactId&gt;spring-cloud-starter-alibaba-nacos-config&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+		&lt;!-- https://mvnrepository.com/artifact/com.alibaba.cloud/spring-cloud-starter-alibaba-nacos-discovery --&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;com.alibaba.cloud&lt;/groupId&gt;
+			&lt;artifactId&gt;spring-cloud-starter-alibaba-nacos-discovery&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+</code></pre>
+<p>摘自  <a href="https://github.com/alibaba/spring-cloud-alibaba/wiki/%E7%89%88%E6%9C%AC%E8%AF%B4%E6%98%8E">版本说明</a><br>
+更多孵化器版本对应可点击链接去官网查看</p>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/uyhs3Xoe6/" class="tag">
+                    SpringCloud
+                  </a>
+                
+                  <a href="https://mask0407.github.io/rg_9e-j4YM/" class="tag">
+                    微服务
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/springcloud06/">
+                  <h3 class="post-title">
+                    Feign开启HyStrix后如何配置线程隔离及熔断策略
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Flume 介绍与使用 | 个人博客</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.0/css/all.min.css">
+<link rel="shortcut icon" href="https://mask0407.github.io/favicon.ico?v=1593400024594">
+<link rel="stylesheet" href="https://mask0407.github.io/styles/main.css">
+
+
+
+
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+
+
+    <meta name="description" content="
+
+
+介绍
+架构
+Flume环境搭建
+
+配置文件结构
+
+
+快速入门
+
+启动
+
+
+Avro Source
+
+Maven依赖
+代码
+
+
+Avro Source | memory channel| Kafka Sink
+Flume和log4j整合..." />
+    <meta name="keywords" content="Flume,Hadoop,大数据" />
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://mask0407.github.io">
+        <img src="https://mask0407.github.io/images/avatar.png?v=1593400024594" class="site-logo">
+        <h1 class="site-title">个人博客</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="social-container">
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    </div>
+    <div class="site-description">
+      温故而知新
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a> | <a class="rss" href="https://mask0407.github.io/atom.xml" target="_blank">RSS</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Flume 介绍与使用</h2>
+            <div class="post-date">2020-06-29</div>
+            
+            <div class="post-content" v-pre>
+              <p><ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#%E4%BB%8B%E7%BB%8D">介绍</a></li>
+<li><a href="#%E6%9E%B6%E6%9E%84">架构</a></li>
+<li><a href="#flume%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA">Flume环境搭建</a>
+<ul>
+<li><a href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84">配置文件结构</a></li>
+</ul>
+</li>
+<li><a href="#%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8">快速入门</a>
+<ul>
+<li><a href="#%E5%90%AF%E5%8A%A8">启动</a></li>
+</ul>
+</li>
+<li><a href="#avro-source">Avro Source</a>
+<ul>
+<li><a href="#maven%E4%BE%9D%E8%B5%96">Maven依赖</a></li>
+<li><a href="#%E4%BB%A3%E7%A0%81">代码</a></li>
+</ul>
+</li>
+<li><a href="#avro-source-memory-channel-kafka-sink">Avro Source | memory channel| Kafka Sink</a></li>
+<li><a href="#flume%E5%92%8Clog4j%E6%95%B4%E5%90%88">Flume和log4j整合</a>
+<ul>
+<li><a href="#%E4%BE%9D%E8%B5%96">依赖</a></li>
+<li><a href="#log4jproperties">log4j.properties</a></li>
+<li><a href="#%E6%B5%8B%E8%AF%95%E4%BB%A3%E7%A0%81">测试代码</a></li>
+</ul>
+</li>
+<li><a href="#spring-boot-logback%E6%95%B4%E5%90%88-flume">Spring Boot  logback整合 Flume</a>
+<ul>
+<li><a href="#springboot%E9%A1%B9%E7%9B%AE%E7%BB%84%E5%BC%95%E5%85%A5logbackxml">SpringBoot项目组引入logback.xml</a></li>
+<li><a href="#%E9%9B%86%E6%88%90-flume-logback">集成 Flume  +logback</a></li>
+<li><a href="#%E5%AE%9A%E5%88%B6%E8%87%AA%E5%B7%B1%E7%9A%84appender">定制自己的Appender</a></li>
+</ul>
+</li>
+<li><a href="#flume%E5%AF%B9%E6%8E%A5hdfs-%E9%9D%99%E6%80%81%E6%89%B9%E5%A4%84%E7%90%86">Flume对接HDFS (静态批处理)</a></li>
+<li><a href="#%E6%8B%A6%E6%88%AA%E5%99%A8%E9%80%9A%E9%81%93%E9%80%89%E6%8B%A9%E5%99%A8">拦截器&amp;通道选择器</a></li>
+<li><a href="#sink-processor">Sink Processor</a></li>
+</ul>
+</li>
+</ul>
+(Apache Flume)</p>
+<h2 id="介绍">介绍</h2>
+<p>Flume是一种分布式，可靠且可用的服务，用于有效地收集，聚合和移动大量日志数据。Flume构建在日志流之上一个简单灵活的架构。它具有可靠的可靠性机制和许多故障转移和恢复机制，具有强大的容错性。使用Flume这套架构实现对日志流数据的实时在线分析。Flume支持在日志系统中定制各类数据发送方，用于收集数据；同时，Flume提供对数据进行简单处理，并写到各种数据接受方（可定制）的能力。</p>
+<h2 id="架构">架构</h2>
+<figure data-type="image" tabindex="1"><img src="https://img-blog.csdnimg.cn/20191107091423836.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></figure>
+<h2 id="flume环境搭建">Flume环境搭建</h2>
+<ul>
+<li>JDK1.8</li>
+</ul>
+<pre><code class="language-shell">tar -zxf apache-flume-1.9.0-bin.tar.gz -C /usr/
+</code></pre>
+<h3 id="配置文件结构">配置文件结构</h3>
+<pre><code class="language-xml"># 声明组件信息
+&lt;Agent&gt;.sources = &lt;Source1&gt; &lt;Source2&gt;
+&lt;Agent&gt;.sinks = &lt;Sink1&gt; &lt;Sink1&gt;
+&lt;Agent&gt;.channels = &lt;Channel1&gt; &lt;Channel2&gt;
+
+# 组件配置
+&lt;Agent&gt;.sources.&lt;Source&gt;.&lt;someProperty&gt; = &lt;someValue&gt;
+&lt;Agent&gt;.channels.&lt;Channel&gt;.&lt;someProperty&gt; = &lt;someValue&gt;
+&lt;Agent&gt;.sinks.&lt;Sink&gt;.&lt;someProperty&gt; = &lt;someValue&gt;
+
+# 链接组件
+&lt;Agent&gt;.sources.&lt;Source&gt;.channels = &lt;Channel1&gt; &lt;Channel2&gt; ...
+&lt;Agent&gt;.sinks.&lt;Sink&gt;.channel = &lt;Channel1&gt;
+</code></pre>
+<h2 id="快速入门">快速入门</h2>
+<figure data-type="image" tabindex="2"><img src="https://img-blog.csdnimg.cn/20191107093331718.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></figure>
+<ul>
+<li>第一台目标机器</li>
+</ul>
+<pre><code class="language-shell">vi conf/demo01.properties
+----------------------------------------------------------------------------
+# 声明组件信息
+a1.sources = s1
+a1.sinks = sk1
+a1.channels = c1
+
+# 组件配置
+a1.sources.s1.type = TAILDIR
+a1.sources.s1.filegroups = f1
+a1.sources.s1.filegroups.f1 = /root/logs/userLoginFile.*
+
+a1.channels.c1.type = memory
+
+a1.sinks.sk1.type = avro
+a1.sinks.sk1.hostname = 192.168.111.133
+a1.sinks.sk1.port = 44444
+
+# 链接组件
+a1.sources.s1.channels = c1
+a1.sinks.sk1.channel = c1
+</code></pre>
+<ul>
+<li>第二台目标机器(192.168.111.133)</li>
+</ul>
+<pre><code class="language-shell">vi conf/demo01.properties
+-----------------------------------------------------------------------------
+# 声明组件信息
+a1.sources = s1
+a1.sinks = sk1
+a1.channels = c1
+
+# 组件配置
+a1.sources.s1.type = avro
+a1.sources.s1.bind = 192.168.111.133
+a1.sources.s1.port = 44444
+
+a1.channels.c1.type = memory
+
+a1.sinks.sk1.type = file_roll
+a1.sinks.sk1.sink.directory = /root/file_roll
+a1.sinks.sk1.sink.rollInterval = 0
+
+# 链接组件
+a1.sources.s1.channels = c1
+a1.sinks.sk1.channel = c1
+</code></pre>
+<h3 id="启动">启动</h3>
+<ul>
+<li>先启动第二台机器</li>
+</ul>
+<pre><code class="language-shell">./bin/flume-ng agent --conf conf/ --conf-file conf/demo01.properties  --name a1
+</code></pre>
+<ul>
+<li>再启动第一台机器</li>
+</ul>
+<pre><code class="language-shell">./bin/flume-ng agent --conf conf/ --conf-file conf/demo01.properties  --name a1
+</code></pre>
+<h2 id="avro-source">Avro Source</h2>
+<ul>
+<li>一般可以通过Avro Sink 将结果直接写入 Avro Source，这种情况，一般指的是通过flume采集本地的日志文件，架构一般如上图所示，一般情况下的应用服务器必须和agent部署在同一台物理主机。（服务器端日志采集）</li>
+<li>用户调用Flume的暴露的SDK，直接将数据发送给Avro Source（移动端）</li>
+</ul>
+<h3 id="maven依赖">Maven依赖</h3>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.flume&lt;/groupId&gt;
+    &lt;artifactId&gt;flume-ng-sdk&lt;/artifactId&gt;
+    &lt;version&gt;1.9.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<h3 id="代码">代码</h3>
+<pre><code class="language-java">Properties props = new Properties();
+props.setProperty(RpcClientConfigurationConstants.CONFIG_CLIENT_TYPE, &quot;avro&quot;);
+props.put(&quot;client.type&quot;, &quot;default_loadbalance&quot;);
+props.put(&quot;hosts&quot;, &quot;h1 h2 h3&quot;);
+String host1 = &quot;192.168.111.133:44444&quot;;
+String host2 = &quot;192.168.111.133:44444&quot;;
+String host3 = &quot;192.168.111.133:44444&quot;;
+props.put(&quot;hosts.h1&quot;, host1);
+props.put(&quot;hosts.h2&quot;, host2);
+props.put(&quot;hosts.h3&quot;, host3);
+props.put(&quot;host-selector&quot;, &quot;random&quot;); // round_robin
+
+RpcClient client= RpcClientFactory.getInstance(props);
+Event event= EventBuilder.withBody(&quot;1 zhangsan true 28&quot;.getBytes());
+client.append(event);
+
+client.close();
+</code></pre>
+<h2 id="avro-source-memory-channel-kafka-sink">Avro Source | memory channel| Kafka Sink</h2>
+<pre><code class="language-shell">vi conf/demo02.properties
+</code></pre>
+<pre><code class="language-xml"># 声明组件信息
+a1.sources = s1
+a1.sinks = sk1
+a1.channels = c1
+
+# 组件配置
+a1.sources.s1.type = avro
+a1.sources.s1.bind = 192.168.111.132
+a1.sources.s1.port = 44444
+
+a1.channels.c1.type = memory
+
+a1.sinks.sk1.type = org.apache.flume.sink.kafka.KafkaSink
+a1.sinks.sk1.kafka.bootstrap.servers = 192.168.111.132:9092
+a1.sinks.sk1.kafka.topic = topic01
+a1.sinks.sk1.flumeBatchSize = 20
+a1.sinks.sk1.kafka.producer.acks = 1
+a1.sinks.sk1.kafka.producer.linger.ms = 1
+
+# 链接组件
+a1.sources.s1.channels = c1
+a1.sinks.sk1.channel = c1
+</code></pre>
+<ul>
+<li>启动</li>
+</ul>
+<pre><code class="language-shell">/bin/flume-ng agent --conf conf/ --conf-file conf/demo02.properties  --name a1
+</code></pre>
+<blockquote>
+<p>注意 <code>a1.sinks.sk1.flumeBatchSize</code>官方写错了<code>a1.sinks.sk1.kafka.flumeBatchSize</code></p>
+</blockquote>
+<h2 id="flume和log4j整合">Flume和log4j整合</h2>
+<h3 id="依赖">依赖</h3>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.flume&lt;/groupId&gt;
+    &lt;artifactId&gt;flume-ng-sdk&lt;/artifactId&gt;
+    &lt;version&gt;1.9.0&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.flume.flume-ng-clients&lt;/groupId&gt;
+    &lt;artifactId&gt;flume-ng-log4jappender&lt;/artifactId&gt;
+    &lt;version&gt;1.9.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<h3 id="log4jproperties">log4j.properties</h3>
+<pre><code class="language-xml">log4j.appender.flume = org.apache.flume.clients.log4jappender.LoadBalancingLog4jAppender
+log4j.appender.flume.Hosts = 192.168.111.132:44444 192.168.111.132:44444 192.168.111.132:44444
+log4j.appender.flume.Selector = ROUND_ROBIN
+log4j.appender.flume.MaxBackoff = 30000
+
+log4j.logger.com.mask = DEBUG,flume
+</code></pre>
+<h3 id="测试代码">测试代码</h3>
+<pre><code class="language-java">import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+public class TestLog {
+    private static Log log= LogFactory.getLog(TestLog.class);
+    public static void main(String[] args) {
+        log.debug(&quot;你好！_debug&quot;);
+        log.info(&quot;你好！_info&quot;);
+        log.warn(&quot;你好！_warn&quot;);
+        log.error(&quot;你好！_error&quot;);
+    }
+}
+</code></pre>
+<h2 id="spring-boot-logback整合-flume">Spring Boot  logback整合 Flume</h2>
+<h3 id="springboot项目组引入logbackxml">SpringBoot项目组引入logback.xml</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;configuration scan=&quot;true&quot; scanPeriod=&quot;60 seconds&quot; debug=&quot;false&quot;&gt;
+
+    &lt;appender name=&quot;STDOUT&quot; class=&quot;ch.qos.logback.core.ConsoleAppender&quot; &gt;
+        &lt;encoder&gt;
+            &lt;pattern&gt;%p %c#%M %d{yyyy-MM-dd HH:mm:ss} %m%n&lt;/pattern&gt;
+            &lt;charset&gt;UTF-8&lt;/charset&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+
+    &lt;appender name=&quot;FILE&quot; class=&quot;ch.qos.logback.core.rolling.RollingFileAppender&quot;&gt;
+　　　　　　&lt;rollingPolicy class=&quot;ch.qos.logback.core.rolling.TimeBasedRollingPolicy&quot;&gt;
+　　　　　　　　　&lt;fileNamePattern&gt;logs/userLoginFile-%d{yyyyMMdd}.log&lt;/fileNamePattern&gt;
+　　　　　　　　　&lt;maxHistory&gt;30&lt;/maxHistory&gt;
+　　　　　　&lt;/rollingPolicy&gt;
+　　　　　　&lt;encoder&gt;
+　　　　　　　　　&lt;pattern&gt;%p %c#%M %d{yyyy-MM-dd HH:mm:ss} %m%n&lt;/pattern&gt;
+				   &lt;charset&gt;UTF-8&lt;/charset&gt;
+　　　　　　&lt;/encoder&gt;
+    &lt;/appender&gt;
+    
+    &lt;!-- 控制台输出日志级别 --&gt;
+    &lt;root level=&quot;ERROR&quot;&gt;
+         &lt;appender-ref ref=&quot;STDOUT&quot; /&gt;
+    &lt;/root&gt;
+    
+    &lt;!--additivity 为false，日志不会再父类appender中输出--&gt;
+    &lt;logger name=&quot;com.mask.tests&quot; level=&quot;INFO&quot; additivity=&quot;false&quot;&gt;
+        &lt;appender-ref ref=&quot;FILE&quot; /&gt;
+        &lt;appender-ref ref=&quot;STDOUT&quot; /&gt;
+    &lt;/logger&gt;
+
+&lt;/configuration&gt;
+</code></pre>
+<h3 id="集成-flume-logback">集成 Flume  +logback</h3>
+<ul>
+<li>在github 上找到<a href="https://github.com/gilt/logback-flume-appender">https://github.com/gilt/logback-flume-appender</a></li>
+<li>将项目源代码拷贝到项目工程：<br>
+<img src="https://img-blog.csdnimg.cn/20191107105332829.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></li>
+<li>在SpringBoot工程中添加当前版本flume的sdk</li>
+</ul>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;org.apache.flume&lt;/groupId&gt;
+    &lt;artifactId&gt;flume-ng-sdk&lt;/artifactId&gt;
+    &lt;version&gt;1.9.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>在项目的logback.xml中添加flume的appender实现</li>
+</ul>
+<pre><code class="language-xml">&lt;appender name=&quot;flume&quot; class=&quot;com.gilt.logback.flume.FlumeLogstashV1Appender&quot;&gt;
+    &lt;flumeAgents&gt;
+        192.168.111.132:44444,
+        192.168.111.132:44444,
+        192.168.111.132:44444
+    &lt;/flumeAgents&gt;
+    &lt;flumeProperties&gt;
+        connect-timeout=4000;
+        request-timeout=8000
+    &lt;/flumeProperties&gt;
+    &lt;batchSize&gt;1&lt;/batchSize&gt;
+    &lt;reportingWindow&gt;1000&lt;/reportingWindow&gt;
+    &lt;additionalAvroHeaders&gt;
+        myHeader=myValue
+    &lt;/additionalAvroHeaders&gt;
+    &lt;application&gt;smapleapp&lt;/application&gt;
+    &lt;layout class=&quot;ch.qos.logback.classic.PatternLayout&quot;&gt;
+        &lt;pattern&gt;%p %c#%M %d{yyyy-MM-dd HH:mm:ss} %m%n&lt;/pattern&gt;
+    &lt;/layout&gt;
+&lt;/appender&gt;
+</code></pre>
+<h3 id="定制自己的appender">定制自己的Appender</h3>
+<pre><code class="language-java">public class BZFlumeLogAppender extends UnsynchronizedAppenderBase&lt;ILoggingEvent&gt; {
+    private String flumeAgents;
+    protected Layout&lt;ILoggingEvent&gt; layout;
+    private static RpcClient rpcClient;
+    @Override
+    protected void append(ILoggingEvent eventObject) {
+       String body= layout!= null? layout.doLayout(eventObject):eventObject.getFormattedMessage();
+        if(rpcClient==null){
+           rpcClient=buildRpcClient();
+        }
+        Event event= EventBuilder.withBody(body,Charset.forName(&quot;UTF-8&quot;));
+        try {
+            rpcClient.append(event);
+        } catch (EventDeliveryException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void setFlumeAgents(String flumeAgents) {
+        this.flumeAgents = flumeAgents;
+    }
+
+    public void setLayout(Layout&lt;ILoggingEvent&gt; layout) {
+        this.layout = layout;
+    }
+    private   RpcClient buildRpcClient(){
+        Properties props = new Properties();
+
+        int i = 0;
+        for (String agent : flumeAgents.split(&quot;,&quot;)) {
+            String[] tokens = agent.split(&quot;:&quot;);
+            props.put(&quot;hosts.h&quot; + (i++), tokens[0] + ':' + tokens[1]);
+        }
+        StringBuffer buffer = new StringBuffer(i * 4);
+        for (int j = 0; j &lt; i; j++) {
+            buffer.append(&quot;h&quot;).append(j).append(&quot; &quot;);
+        }
+        props.put(&quot;hosts&quot;, buffer.toString());
+
+        if(i &gt; 1) {
+            props.put(&quot;client.type&quot;, &quot;default_loadbalance&quot;);
+            props.put(&quot;host-selector&quot;, &quot;round_robin&quot;);
+        }
+
+        props.put(&quot;backoff&quot;, &quot;true&quot;);
+        props.put(&quot;maxBackoff&quot;, &quot;10000&quot;);
+
+        return RpcClientFactory.getInstance(props);
+    }
+}
+</code></pre>
+<pre><code class="language-xml">&lt;appender name=&quot;bz&quot; class=&quot;com.mask.flume.BZFlumeLogAppender&quot;&gt;
+    &lt;flumeAgents&gt;
+        192.168.111.132:44444,192.168.111.132:44444
+    &lt;/flumeAgents&gt;
+    &lt;layout class=&quot;ch.qos.logback.classic.PatternLayout&quot;&gt;
+        &lt;pattern&gt;%p %c#%M %d{yyyy-MM-dd HH:mm:ss} %m&lt;/pattern&gt;
+    &lt;/layout&gt;
+&lt;/appender&gt;
+</code></pre>
+<h2 id="flume对接hdfs-静态批处理">Flume对接HDFS (静态批处理)</h2>
+<p>将一个目录下的日志文件，采集到HDFS中，并且删除采集完成的日志文件（批处理作业中）</p>
+<blockquote>
+<p>spooldir source、jdbc channel、HDFS Sink</p>
+</blockquote>
+<pre><code class="language-xml"># 声明组件信息
+a1.sources = s1
+a1.sinks = sk1
+a1.channels = c1
+
+# 组件配置
+a1.sources.s1.type = spooldir
+a1.sources.s1.spoolDir = /root/spooldir
+a1.sources.s1.deletePolicy = immediate
+a1.sources.s1.includePattern = ^.*\.log$
+
+a1.channels.c1.type = jdbc
+
+a1.sinks.sk1.type = hdfs
+a1.sinks.sk1.hdfs.path= hdfs:///flume/%y-%m-%d/
+a1.sinks.sk1.hdfs.filePrefix = events-
+a1.sinks.sk1.hdfs.useLocalTimeStamp = true
+a1.sinks.sk1.hdfs.rollInterval = 0
+a1.sinks.sk1.hdfs.rollSize = 0 
+a1.sinks.sk1.hdfs.rollCount = 0
+a1.sinks.sk1.hdfs.fileType = DataStream
+
+# 链接组件
+a1.sources.s1.channels = c1
+a1.sinks.sk1.channel = c1
+</code></pre>
+<h2 id="拦截器通道选择器">拦截器&amp;通道选择器</h2>
+<figure data-type="image" tabindex="3"><img src="https://img-blog.csdnimg.cn/20191107110619702.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L00yODM1OTIzMzg=,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述" loading="lazy"></figure>
+<pre><code class="language-xml"># 声明组件信息
+a1.sources = s1
+a1.sinks = sk1 sk2
+a1.channels = c1 c2
+
+# 组件配置
+a1.sources.s1.type = avro
+a1.sources.s1.bind = 192.168.111.132
+a1.sources.s1.port = 44444
+
+# 拦截器 
+a1.sources.s1.interceptors = i1 i2
+a1.sources.s1.interceptors.i1.type = regex_filter
+a1.sources.s1.interceptors.i1.regex = .*UserController.*
+a1.sources.s1.interceptors.i1.excludeEvents = false
+
+a1.sources.s1.interceptors.i2.type = regex_extractor
+a1.sources.s1.interceptors.i2.regex = .*(EVALUATE|SUCCESS).*
+a1.sources.s1.interceptors.i2.serializers = s1
+a1.sources.s1.interceptors.i2.serializers.s1.name = type
+
+a1.channels.c1.type = memory
+a1.channels.c2.type = memory
+
+a1.sinks.sk1.type = org.apache.flume.sink.kafka.KafkaSink
+a1.sinks.sk1.kafka.bootstrap.servers = 192.168.111.132:9092
+a1.sinks.sk1.kafka.topic = evaluatetopic
+a1.sinks.sk1.flumeBatchSize = 20
+a1.sinks.sk1.kafka.producer.acks = 1
+a1.sinks.sk1.kafka.producer.linger.ms = 1
+
+a1.sinks.sk2.type = org.apache.flume.sink.kafka.KafkaSink
+a1.sinks.sk2.kafka.bootstrap.servers = 192.168.111.132:9092
+a1.sinks.sk2.kafka.topic = usertopic
+a1.sinks.sk2.flumeBatchSize = 20
+a1.sinks.sk2.kafka.producer.acks = 1
+a1.sinks.sk2.kafka.producer.linger.ms = 1
+
+# 通道选择器分流
+a1.sources.s1.selector.type = multiplexing
+a1.sources.s1.selector.header = type
+a1.sources.s1.selector.mapping.EVALUATE = c1
+a1.sources.s1.selector.mapping.SUCCESS = c2
+a1.sources.s1.selector.default = c2
+
+# 链接组件
+a1.sources.s1.channels = c1 c2
+a1.sinks.sk1.channel = c1
+a1.sinks.sk2.channel = c2
+</code></pre>
+<h2 id="sink-processor">Sink Processor</h2>
+<figure data-type="image" tabindex="4"><img src="https://img-blog.csdnimg.cn/20191107110856329.png" alt="在这里插入图片描述" loading="lazy"></figure>
+<pre><code class="language-xml"># 声明组件
+a1.sources = s1
+a1.sinks = sk1 sk2 
+a1.channels = c1
+
+# 将看 k1 k2 归纳一个组
+a1.sinkgroups = g1 
+a1.sinkgroups.g1.sinks = sk1 sk2
+a1.sinkgroups.g1.processor.type = load_balance
+a1.sinkgroups.g1.processor.backoff = true
+a1.sinkgroups.g1.processor.selector = round_robin
+
+# 配置source属性
+a1.sources.s1.type = avro
+a1.sources.s1.bind = 192.168.111.132
+a1.sources.s1.port = 44444
+
+# 配置sink属性
+a1.sinks.sk1.type = org.apache.flume.sink.kafka.KafkaSink
+a1.sinks.sk1.kafka.bootstrap.servers = 192.168.111.132:9092
+a1.sinks.sk1.kafka.topic = evaluatetopic
+a1.sinks.sk1.flumeBatchSize = 20
+a1.sinks.sk1.kafka.producer.acks = 1
+a1.sinks.sk1.kafka.producer.linger.ms = 1
+
+a1.sinks.sk2.type = org.apache.flume.sink.kafka.KafkaSink
+a1.sinks.sk2.kafka.bootstrap.servers = 192.168.111.132:9092
+a1.sinks.sk2.kafka.topic = usertopic
+a1.sinks.sk2.flumeBatchSize = 20
+a1.sinks.sk2.kafka.producer.acks = 1
+a1.sinks.sk2.kafka.producer.linger.ms = 1
+
+# 配置channel属性
+a1.channels.c1.type = memory
+a1.channels.c1.transactionCapacity = 1
+
+# 将source连接channel
+a1.sources.s1.channels = c1 
+a1.sinks.sk1.channel = c1
+a1.sinks.sk2.channel = c1
+</code></pre>
+
+            </div>
+            
+              <div class="tag-container">
+                
+                  <a href="https://mask0407.github.io/QZpGpA6c1/" class="tag">
+                    Flume
+                  </a>
+                
+                  <a href="https://mask0407.github.io/mWPQYQko7/" class="tag">
+                    Hadoop
+                  </a>
+                
+                  <a href="https://mask0407.github.io/1ffDVERZml/" class="tag">
+                    大数据
+                  </a>
+                
+              </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://mask0407.github.io/hive01/">
+                  <h3 class="post-title">
+                    Hadoop生态圈-Hive
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.min.js"></script>
+<script type="application/javascript">
+
+AOS.init();
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+
+
+  </body>
+</html>
